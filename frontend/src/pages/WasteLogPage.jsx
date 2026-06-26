@@ -20,7 +20,10 @@ const CO2_MAP = { plastic: 1.5, organic: 0.5, 'e-waste': 2.0, metal: 1.8, paper:
 export default function WasteLogPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+<<<<<<< HEAD
   const cameraInputRef = useRef(null);
+=======
+>>>>>>> bfdfefe (made ai fixes , frontend connected properly , eco shop , profile is no more static , implemented google oauth , and resolved the scanner detection bugs.)
 
   const [selected,   setSelected]   = useState('organic');
   const [qty,        setQty]        = useState(2.5);
@@ -158,6 +161,7 @@ export default function WasteLogPage() {
             <div className="log-ai-badge">AI Powered</div>
             <h2 className="log-ai-title">Instant AI Classification</h2>
             <p className="log-ai-desc">Don't know the category? Point your camera and let our AI handle the rest.</p>
+<<<<<<< HEAD
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', width: '100%' }}>
               <button
                 className="log-ai-btn"
@@ -183,10 +187,31 @@ export default function WasteLogPage() {
               </button>
             </div>
             {/* Hidden file input for gallery upload (no capture attribute) */}
+=======
+            <button
+              className="log-ai-btn"
+              onClick={handleAIScan}
+              disabled={scanning}
+            >
+              {scanning ? (
+                <>
+                  <span className="material-symbols-outlined log-spin">progress_activity</span>
+                  Analysing…
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined">camera</span>
+                  Start AI Scan
+                </>
+              )}
+            </button>
+            {/* Hidden file input for image capture */}
+>>>>>>> bfdfefe (made ai fixes , frontend connected properly , eco shop , profile is no more static , implemented google oauth , and resolved the scanner detection bugs.)
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
+<<<<<<< HEAD
               style={{ display: 'none' }}
               onChange={handleFileSelect}
             />
@@ -196,6 +221,9 @@ export default function WasteLogPage() {
               type="file"
               accept="image/*"
               capture="environment"
+=======
+              multiple
+>>>>>>> bfdfefe (made ai fixes , frontend connected properly , eco shop , profile is no more static , implemented google oauth , and resolved the scanner detection bugs.)
               style={{ display: 'none' }}
               onChange={handleFileSelect}
             />
