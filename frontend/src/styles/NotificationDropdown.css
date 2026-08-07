@@ -1,0 +1,171 @@
+.notification-dropdown {
+
+    position: absolute;
+
+    top: 50px;
+
+    right: 0;
+
+    width: 320px;
+
+    max-height: 420px;
+
+    overflow-y: auto;
+
+    background: var(--surface-container-lowest);
+
+    border: 1px solid var(--outline-variant);
+
+    border-radius: 16px;
+
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+    z-index: 1000;
+
+    font-family: var(--font-body);
+
+}
+
+.notification-header {
+
+    position: sticky;
+
+    top: 0;
+
+    z-index: 1;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    padding: 12px 14px;
+
+    background: var(--surface-container-low);
+
+    border-bottom: 1px solid var(--outline-variant);
+
+    border-radius: 16px 16px 0 0;
+
+}
+
+.notification-header h3 {
+
+    margin: 0;
+
+    font-size: 15px;
+
+    font-weight: 700;
+
+    font-family: var(--font-headline);
+
+    color: var(--on-surface);
+
+}
+
+.mark-all-btn {
+
+    border: none;
+
+    background: none;
+
+    cursor: pointer;
+
+    color: var(--primary);
+
+    font-weight: 600;
+
+    font-size: 12px;
+
+    font-family: var(--font-body);
+
+}
+
+.mark-all-btn:hover {
+
+    text-decoration: underline;
+
+}
+
+.notification-empty {
+
+    padding: 32px 16px;
+
+    text-align: center;
+
+    color: var(--on-surface-variant);
+
+    font-size: 13px;
+
+}
+
+.notification-item {
+
+    padding: 12px 14px;
+
+    cursor: pointer;
+
+    transition: background 0.15s;
+
+    border-bottom: 1px solid var(--outline-variant);
+
+}
+
+.notification-item:last-child {
+
+    border-bottom: none;
+
+}
+
+.notification-item:hover {
+
+    background: var(--surface-container-high);
+
+}
+
+.notification-unread {
+
+    background: var(--primary-fixed);
+
+}
+
+.notification-unread:hover {
+
+    background: var(--primary-fixed-dim);
+
+}
+
+.notification-title {
+
+    font-weight: 600;
+
+    font-size: 13px;
+
+    color: var(--on-surface);
+
+    font-family: var(--font-headline);
+
+}
+
+.notification-body {
+
+    margin-top: 3px;
+
+    font-size: 12px;
+
+    color: var(--on-surface-variant);
+
+    line-height: 1.4;
+
+}
+
+.notification-time {
+
+    margin-top: 6px;
+
+    font-size: 11px;
+
+    color: var(--outline);
+
+}
