@@ -87,7 +87,23 @@ export default function DashboardPage() {
     setShowBadge(false);
   };
 
-  const nextFact = () => setFactIndex(i => (i + 1) % WASTE_FACTS.length);
+  // Auto-rotate facts every 6 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setFactIndex(i => (i + 1) % WASTE_FACTS.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const prevFact = (e) => {
+    if (e) e.stopPropagation();
+    setFactIndex(i => (i - 1 + WASTE_FACTS.length) % WASTE_FACTS.length);
+  };
+
+  const nextFact = (e) => {
+    if (e) e.stopPropagation();
+    setFactIndex(i => (i + 1) % WASTE_FACTS.length);
+  };
 
   const handleCarouselScroll = () => {
     const el = carouselRef.current;
@@ -242,6 +258,21 @@ export default function DashboardPage() {
             </div>
           </section>
 
+<<<<<<< HEAD
+=======
+          {/* ── Daily Fact Strip ── */}
+          <div className="daily-fact-strip">
+            <button type="button" className="fact-nav-btn" onClick={prevFact} aria-label="Previous fact">
+              <span className="material-symbols-outlined fact-arrow">chevron_left</span>
+            </button>
+            <span className="material-symbols-outlined fact-icon">lightbulb</span>
+            <p className="fact-text">{WASTE_FACTS[factIndex]}</p>
+            <button type="button" className="fact-nav-btn" onClick={nextFact} aria-label="Next fact">
+              <span className="material-symbols-outlined fact-arrow">chevron_right</span>
+            </button>
+          </div>
+
+>>>>>>> 02eade1 (home page and log waste page ui fixed)
           {/* ── Activity Feed + Challenge Carousel */}
           <section className="feed-grid">
             <div className="feed-col">
