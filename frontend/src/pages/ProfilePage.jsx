@@ -22,6 +22,11 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { notifications, markAsRead, markAllAsRead } = useNotifications();
+<<<<<<< HEAD
+=======
+  const { statsData } = useStats();
+  const stats = statsData.all; // All-time stats
+>>>>>>> 2285bed (feat(frontend): hazard flag on waste log, voucher unlock confirm, map legend and retry, modal a11y)
   const quizResults = getQuizResults();
   const completedQuizzes = Object.keys(quizResults).length;
   const totalQuizPoints = Object.values(quizResults).reduce((sum, r) => sum + r.score * 10, 0);
@@ -33,6 +38,14 @@ export default function ProfilePage() {
   const [activeModal, setActiveModal] = useState(null);
   const [editName, setEditName] = useState(user?.name || '');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Escape closes any open modal (a11y)
+  useEffect(() => {
+    if (!activeModal) return;
+    const onKey = (e) => { if (e.key === 'Escape') setActiveModal(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [activeModal]);
 
   useEffect(() => {
     Promise.allSettled([
@@ -324,7 +337,7 @@ export default function ProfilePage() {
 
       {/* MODALS */}
       {activeModal && (
-        <div className="modal-backdrop" onClick={() => setActiveModal(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={activeModal === 'edit' ? 'Edit profile' : 'Notifications'} onClick={() => setActiveModal(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: '24px', padding: '1.5rem', width: '100%', maxWidth: '400px', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
             
             {activeModal === 'edit' && (

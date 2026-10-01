@@ -312,6 +312,7 @@ export default function WasteMarkers({ map }) {
         </div>
       )}
 
+<<<<<<< HEAD
       {!loading && retryIn > 0 && (
         <div className="waste-loading-badge" style={{ background: '#fff3e0', color: '#E65100' }}>
           <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>timer</span>
@@ -338,6 +339,26 @@ export default function WasteMarkers({ map }) {
               north: b.getNorth(), east: b.getEast(),
             });
           }}>retry</button>
+=======
+      {!loading && error && (
+        <div className="waste-error-badge" role="alert">
+          <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>error</span>
+          {/bounding box/i.test(error) ? (
+            <span>Zoom in to load markers.</span>
+          ) : (
+            <>
+              <span>Could not load markers. </span>
+              <button type="button" className="waste-retry-btn" aria-label="Retry loading markers" onClick={() => {
+                if (!map) return;
+                const b = map.getBounds();
+                fetchData({
+                  north: b.getNorth(), south: b.getSouth(),
+                  east: b.getEast(), west: b.getWest(),
+                });
+              }}>retry</button>
+            </>
+          )}
+>>>>>>> 2285bed (feat(frontend): hazard flag on waste log, voucher unlock confirm, map legend and retry, modal a11y)
         </div>
       )}
     </div>
