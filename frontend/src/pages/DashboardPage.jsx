@@ -4,7 +4,13 @@ import Navbar from '../components/common/Navbar';
 import BottomNav from '../components/common/BottomNav';
 import DashboardSkeleton from '../components/dashboard/DashboardSkeleton';
 import TutorialOverlay from '../components/common/TutorialOverlay';
+<<<<<<< HEAD
 import { getWasteStats, getActiveChallenges, getUpcomingEvents, getProfile } from '../services/api';
+=======
+import { getActiveChallenges, getUpcomingEvents, getProfile } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { useStats } from '../context/StatsContext';
+>>>>>>> 9f9f8e5 (Revert "phase 1 done after review")
 import '../styles/dashboard.css';
 
 const WASTE_FACTS = [
@@ -34,6 +40,7 @@ export default function DashboardPage() {
   const [activeSlide, setActiveSlide] = useState(0);
   const carouselRef = useRef(null);
 
+<<<<<<< HEAD
   // Real data state
   const [stats,      setStats]      = useState(null);   // waste stats
   const [challenges, setChallenges] = useState([]);     // active challenges
@@ -41,6 +48,49 @@ export default function DashboardPage() {
   const [profile,    setProfile]    = useState(null);   // user profile
 
   // Daily Check-in Badge — shows ONCE per session via sessionStorage
+=======
+  // Cached server state via React Query and StatsContext
+  const { statsData, loading: statsLoading } = useStats();
+  const stats = statsData.week; // waste stats for current week
+  const recentLogs = stats?.recentLogs || []; // recent waste logs
+
+  const { data: challenges = [], isLoading: challengesLoading } = useQuery({
+    queryKey: ['challenges', 'active'],
+    queryFn: async () => {
+      const res = await getActiveChallenges();
+      return Array.isArray(res.data) ? res.data : [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: events = [] } = useQuery({
+    queryKey: ['events', 'upcoming'],
+    queryFn: async () => {
+      const res = await getUpcomingEvents();
+      return Array.isArray(res.data) ? res.data : [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: profile } = useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      const res = await getProfile();
+      return res.data;
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Sync profile data to AuthContext if newer data arrived
+  useEffect(() => {
+    if (profile) {
+      updateUser(profile);
+    }
+  }, [profile, updateUser]);
+
+  // Daily Check-in Badge — shows ONCE per day via localStorage
+>>>>>>> 9f9f8e5 (Revert "phase 1 done after review")
   const [showBadge, setShowBadge] = useState(() => {
     try {
       return !sessionStorage.getItem('badge_shown');
@@ -157,6 +207,38 @@ export default function DashboardPage() {
     { id: 2, icon: 'compost',   iconColor: 'var(--tertiary)', title: 'Organic Waste Logged', meta: 'Home • Yesterday', points: '+8 pts', pointsType: 'positive', status: 'Pending' },
   ];
 
+<<<<<<< HEAD
+=======
+  const carouselItems = challenges.map((ch, i) => {
+    const submittedDays = ch.userProgress?.submittedDays?.length || 0;
+    const totalDays = ch.durationDays || 1;
+    const progressPct = Math.min(100, Math.round((submittedDays / totalDays) * 100));
+
+    return {
+      id: ch._id,
+      tag: 'Weekly Mission',
+      title: ch.title,
+      desc: ch.description || `Complete tasks and earn ${ch.rewardPoints || 100} eco points.`,
+      progress: progressPct,
+      participants: ch.participantCount ? `${ch.participantCount.toLocaleString()}` : '—',
+      img: bgImgs[i % bgImgs.length],
+      _raw: ch,
+    };
+  });
+
+  // Build activity feed from real recent logs (empty array when none exist — no fake fallback data)
+  const activityFeed = recentLogs.map((log) => ({
+    id: log._id,
+    icon: 'recycling',
+    iconColor: 'var(--primary)',
+    title: `${log.category} Waste Logged`,
+    meta: `${log.unit === 'g' ? (log.quantity / 1000).toFixed(2) : log.quantity.toFixed(1)} kg • ${new Date(log.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`,
+    points: `+${log.pointsEarned} pts`,
+    pointsType: 'positive',
+    status: log.pointsEarned > 0 ? 'Verified' : 'Pending',
+  }));
+
+>>>>>>> 9f9f8e5 (Revert "phase 1 done after review")
   return (
     <div className="dashboard-root">
       <TutorialOverlay />
