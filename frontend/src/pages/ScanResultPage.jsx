@@ -281,6 +281,7 @@ export default function ScanResultPage() {
         </div>
       )}
       <footer className="scan-result-footer">
+<<<<<<< HEAD
         <button className="scan-confirm-btn" onClick={handleConfirm} disabled={submitting}>
           {submitting ? (
             <><span className="material-symbols-outlined log-spin">progress_activity</span> Logging…</>
@@ -290,6 +291,23 @@ export default function ScanResultPage() {
             <>Confirm &amp; Log <span className="material-symbols-outlined">check_circle</span></>
           )}
         </button>
+=======
+        {!isInvalid ? (
+          <button className="scan-confirm-btn" onClick={handleConfirm} disabled={submitting}>
+            {submitting ? (
+              <><span className="material-symbols-outlined log-spin">progress_activity</span> Logging…</>
+            ) : confirmed ? (
+              <><span className="material-symbols-outlined">check_circle</span> Waste Logged</>
+            ) : (
+              <>Confirm &amp; Log <span className="material-symbols-outlined">check_circle</span></>
+            )}
+          </button>
+        ) : (
+          <button className="scan-confirm-btn" style={{ background: 'var(--surface-container-highest)', color: 'var(--on-surface)' }} onClick={handleEdit}>
+            Take Another Photo
+          </button>
+        )}
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
         <button className="scan-edit-btn" onClick={handleEdit}>Edit Category</button>
       </footer>
       

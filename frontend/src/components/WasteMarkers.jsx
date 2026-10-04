@@ -13,6 +13,7 @@
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
+import axios from 'axios';
 import 'leaflet.markercluster';
 import { fetchWasteLocations } from '../lib/overpass';
 import { parseOverpassResponse } from '../lib/parser';
@@ -84,7 +85,7 @@ function createWasteIcon(L, filterKey) {
 function buildPopupHTML(loc, filterKey) {
   const meta = getMeta(filterKey);
   const name = loc.name || loc.category;
-  const tagRows = Object.entries(loc.tags)
+  const tagRows = Object.entries(loc.tags || {})
     .filter(([k]) => !k.startsWith('_'))
     .map(([k, v]) => `<tr><td style="color:#666;white-space:nowrap;padding:1px 6px 1px 0">${k}</td><td style="padding:1px 0">${v}</td></tr>`)
     .join('');
@@ -101,7 +102,7 @@ function buildPopupHTML(loc, filterKey) {
         </div>
       </div>
       <div style="font-size:0.75rem;color:#888;margin-bottom:4px">
-        OSM ID: ${loc.osmId} &middot; ${loc.type}<br/>
+        OSM ID: ${loc.osmId || 'N/A'} &middot; ${loc.type || 'Bin'}<br/>
         ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}
       </div>
       ${tagRows ? `<div style="max-height:120px;overflow-y:auto;margin-top:6px;border-top:1px solid #eee;padding-top:4px"><table style="font-size:0.7rem;border-collapse:collapse;width:100%">${tagRows}</table></div>` : ''}
@@ -109,6 +110,7 @@ function buildPopupHTML(loc, filterKey) {
   `;
 }
 
+<<<<<<< HEAD
 /* ── Main Component ────────────────────────────────────────────── */
 
 export default function WasteMarkers({ map }) {
@@ -116,24 +118,59 @@ export default function WasteMarkers({ map }) {
   const [error, setError]       = useState(null);
   const [retryIn, setRetryIn]   = useState(0);
   const [zoomMsg, setZoomMsg]   = useState('');
+=======
+export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick }) {
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState(null);
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
   const [chipState, setChipState] = useState(DEFAULT_CATEGORIES);
 
+<<<<<<< HEAD
   const layerRef        = useRef(null);
   const debounceRef     = useRef(null);
   const clusterEnabled  = useRef(false);
   const categoriesRef   = useRef(DEFAULT_CATEGORIES);
   const inFlightCount   = useRef(0);
+=======
+  const layerRef           = useRef(null);
+  const debounceRef        = useRef(null);
+  const clusterEnabled     = useRef(false);
+  const categoriesRef      = useRef(DEFAULT_CATEGORIES);
+  const locationsRef       = useRef([]);
+  const onMarkerClickRef    = useRef(onMarkerClick);
+  const abortControllerRef = useRef(null);
+
+  useEffect(() => {
+    onMarkerClickRef.current = onMarkerClick;
+  }, [onMarkerClick]);
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
 
   /* ── Render all locations currently visible in viewport ─────── */
   const renderMarkers = useCallback(() => {
     if (!map || !window.L) return;
 
     const L = window.L;
+<<<<<<< HEAD
     const b = map.getBounds();
+=======
+
+    if (!layerRef.current) {
+      layerRef.current = L.layerGroup();
+      map.addLayer(layerRef.current);
+    }
+
+    layerRef.current.clearLayers();
+
+    if (activeFilter === 'events') {
+      return;
+    }
+
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
     const activeKeys = new Set(
       categoriesRef.current.filter(c => c.active).map(c => c.key)
     );
 
+<<<<<<< HEAD
     const locations = locationStore.getWithin({
       south: b.getSouth(), west: b.getWest(),
       north: b.getNorth(), east: b.getEast(),
@@ -143,9 +180,13 @@ export default function WasteMarkers({ map }) {
       layerRef.current.clearLayers();
     }
 
+=======
+    const locations = locationsRef.current;
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
     const useCluster = locations.length > 500;
+
     if (useCluster && !clusterEnabled.current) {
-      if (layerRef.current) map.removeLayer(layerRef.current);
+      map.removeLayer(layerRef.current);
       layerRef.current = L.markerClusterGroup({
         chunkedLoading: true,
         maxClusterRadius: 50,
@@ -163,13 +204,10 @@ export default function WasteMarkers({ map }) {
       map.addLayer(layerRef.current);
       clusterEnabled.current = true;
     } else if (!useCluster && clusterEnabled.current) {
-      if (layerRef.current) map.removeLayer(layerRef.current);
+      map.removeLayer(layerRef.current);
       layerRef.current = L.layerGroup();
       map.addLayer(layerRef.current);
       clusterEnabled.current = false;
-    } else if (!layerRef.current) {
-      layerRef.current = L.layerGroup();
-      map.addLayer(layerRef.current);
     }
 
     for (const loc of locations) {
@@ -179,10 +217,26 @@ export default function WasteMarkers({ map }) {
       const icon = createWasteIcon(L, filterKey);
       const marker = L.marker([loc.lat, loc.lng], { icon });
       marker.bindPopup(buildPopupHTML(loc, filterKey), { maxWidth: 300 });
+<<<<<<< HEAD
+=======
+      marker.on('click', () => {
+        if (onMarkerClickRef.current) {
+          onMarkerClickRef.current({
+            lat: loc.lat,
+            lng: loc.lng,
+            name: loc.name || loc.category,
+            category: loc.category,
+            _lat: loc.lat,
+            _lng: loc.lng,
+          });
+        }
+      });
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
       layerRef.current.addLayer(marker);
     }
-  }, [map]);
+  }, [map, activeFilter]);
 
+<<<<<<< HEAD
   /* ── Fetch Overpass data — never cancels, results always cached ── */
   const fetchData = useCallback(async (bounds, zoom) => {
     if (zoom != null && zoom < 7) {
@@ -192,6 +246,19 @@ export default function WasteMarkers({ map }) {
       return;
     }
     setZoomMsg('');
+=======
+  const fetchData = useCallback(async (bounds) => {
+    if (!bounds || activeFilter === 'events') {
+      setLoading(false);
+      return;
+    }
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
 
     if (locationStore.hasFetched(bounds)) {
       renderMarkers();
@@ -203,14 +270,26 @@ export default function WasteMarkers({ map }) {
     setError(null);
 
     try {
+<<<<<<< HEAD
       const data = await fetchWasteLocations(bounds);
       const locations = parseOverpassResponse(data);
 
       locationStore.add(locations);
       locationStore.markFetched(bounds);
+=======
+      const { data } = await getMapMarkers({
+        north: bounds.north,
+        south: bounds.south,
+        east: bounds.east,
+        west: bounds.west,
+      }, { signal: controller.signal });
+
+      if (controller.signal.aborted) return;
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
 
       renderMarkers();
     } catch (err) {
+<<<<<<< HEAD
       if (err.message.startsWith('Rate limited')) {
         const match = err.message.match(/(\d+)s/);
         const seconds = match ? parseInt(match[1], 10) : 10;
@@ -227,25 +306,59 @@ export default function WasteMarkers({ map }) {
     } finally {
       inFlightCount.current--;
       if (inFlightCount.current === 0) setLoading(false);
+=======
+      if (err.name === 'CanceledError' || err.name === 'AbortError' || axios.isCancel?.(err)) {
+        return;
+      }
+      console.error('[WasteMarkers] Fetch error:', err);
+      setError(err.message || 'Failed to load markers');
+    } finally {
+      if (abortControllerRef.current === controller && !controller.signal.aborted) {
+        setLoading(false);
+      }
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
     }
-  }, [renderMarkers]);
+  }, [renderMarkers, activeFilter]);
 
   /* ── Debounced map move handler ────────────────────────────── */
   const onMapMove = useCallback(() => {
+    if (activeFilter === 'events') return;
+
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       if (!map) return;
       const b = map.getBounds();
       fetchData({
+<<<<<<< HEAD
         south: b.getSouth(), west: b.getWest(),
         north: b.getNorth(), east: b.getEast(),
       }, map.getZoom());
     }, 1000);
   }, [map, fetchData]);
+=======
+        north: b.getNorth(),
+        south: b.getSouth(),
+        east: b.getEast(),
+        west: b.getWest(),
+      });
+    }, 400);
+  }, [map, fetchData, activeFilter]);
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
 
   /* ── Attach map events — runs ONCE, never re-runs ────────────── */
   useEffect(() => {
     if (!map) return;
+
+    if (activeFilter === 'events') {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      setLoading(false);
+      if (layerRef.current) {
+        layerRef.current.clearLayers();
+      }
+      return;
+    }
 
     map.on('moveend', onMapMove);
     map.on('zoomend', onMapMove);
@@ -261,12 +374,9 @@ export default function WasteMarkers({ map }) {
       map.off('moveend', onMapMove);
       map.off('zoomend', onMapMove);
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (layerRef.current) {
-        map.removeLayer(layerRef.current);
-        layerRef.current = null;
-      }
+      if (abortControllerRef.current) abortControllerRef.current.abort();
     };
-  }, [map]);
+  }, [map, activeFilter, onMapMove, fetchData]);
 
   /* ── Filter toggle — updates ref + re-renders markers ──────── */
   const toggleCategory = (key) => {
@@ -281,7 +391,14 @@ export default function WasteMarkers({ map }) {
     renderMarkers();
   }, [chipState, renderMarkers]);
 
+<<<<<<< HEAD
   /* ── Render ──────────────────────────────────────────────────── */
+=======
+  if (activeFilter === 'events') {
+    return null;
+  }
+
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
   return (
     <div className="waste-markers-ui">
       <div className="waste-filter-chips">

@@ -76,14 +76,19 @@ export const getWasteHistory = (params = {}) =>
 export const getWasteStats = (range = 'week') =>
   api.get('/api/v1/waste/stats', { params: { range } });
 
+<<<<<<< HEAD
 /**
  * POST /waste/scan  (AI image scan)
  * Body: FormData with key "images" (file upload)
  * Returns: { success, model, usage, parsed: { label, category, material, confidence, steps } }
  */
 export const scanWasteImage = (formData) =>
+=======
+export const scanWasteImage = (formData, config = {}) =>
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
   api.post('/api/v1/waste/scan', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    ...config,
   });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -104,6 +109,16 @@ export const getNearbyBins = ({ lat, lng, radius = 5000 }) =>
 export const createBin = (data) => api.post('/api/v1/bins', data);
 
 // ════════════════════════════════════════════════════════════════════════════
+<<<<<<< HEAD
+=======
+// MAP MARKERS  (from DB — no direct OSM calls)
+// ════════════════════════════════════════════════════════════════════════════
+
+export const getMapMarkers = (bounds, config = {}) =>
+  api.get('/api/v1/markers', { params: bounds, ...config });
+
+// ════════════════════════════════════════════════════════════════════════════
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
 // EVENTS  (FR-13, FR-14)
 // ════════════════════════════════════════════════════════════════════════════
 

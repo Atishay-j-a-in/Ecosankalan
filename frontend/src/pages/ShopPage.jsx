@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import Navbar from '../components/common/Navbar';
 import BottomNav from '../components/common/BottomNav';
 import { getProducts, getMyVouchers, getProfile, getProductRedirectUrl } from '../services/api';
@@ -26,32 +27,52 @@ const FILTER_CHIPS = ['All', 'Home', 'Kitchen', 'Reusable', 'Zero Waste', 'Elect
 export default function ShopPage() {
   const navigate = useNavigate();
 
-  const [products,      setProducts]      = useState([]);
   const [myVouchers,    setMyVouchers]    = useState([]);
   const [userPoints,    setUserPoints]    = useState(0);
   const [activeChip,    setActiveChip]    = useState('All');
+<<<<<<< HEAD
+=======
+  const [searchQuery,   setSearchQuery]   = useState('');
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
   const [revealedCodes, setRevealedCodes] = useState({});
-  const [loading,       setLoading]       = useState(true);
+
+  const { data: products = [], isLoading: productsLoading } = useQuery({
+    queryKey: ['products'],
+    queryFn: async () => {
+      const pRes = await getProducts();
+      const list = Array.isArray(pRes.data) ? pRes.data : (pRes.data?.products || []);
+      return list.length > 0 ? list : FALLBACK_PRODUCTS;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
+    const loadData = async () => {
       try {
-        const [pRes, vRes, uRes] = await Promise.all([
-          getProducts(),
+        const [vRes, uRes] = await Promise.all([
           getMyVouchers(),
           getProfile(),
         ]);
+<<<<<<< HEAD
         setProducts(pRes.data.length > 0 ? pRes.data : FALLBACK_PRODUCTS);
         setMyVouchers(vRes.data);
         setUserPoints(uRes.data?.ecoPoints || 0);
       } catch (err) {
         // On error, show fallback products
         setProducts(FALLBACK_PRODUCTS);
+=======
+        setMyVouchers(Array.isArray(vRes.data) ? vRes.data : []);
+        setUserPoints(uRes.data?.user?.ecoPoints ?? uRes.data?.ecoPoints ?? 0);
+      } catch (err) {
+        if (import.meta.env.DEV) console.error('[shop] failed to load profile/vouchers:', err?.message || err);
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
       } finally {
         setLoading(false);
       }
     };
-    load();
+    loadData();
   }, []);
 
   const toggleCode = (id) => setRevealedCodes(p => ({ ...p, [id]: !p[id] }));
@@ -67,16 +88,23 @@ export default function ShopPage() {
     if (product._id === '3') return window.open('https://www.decathlon.in/', '_blank');
     
     if (product._id && !product._id.startsWith('fallback')) {
-      // Real product — use backend redirect (appends utm_source=ecosankalan)
       window.open(getProductRedirectUrl(product._id), '_blank', 'noopener,noreferrer');
     } else {
       navigate('/product-detail', { state: { product } });
     }
   };
 
+<<<<<<< HEAD
   const filtered = activeChip === 'All'
     ? products
     : products.filter(p => (p.category || '').toLowerCase() === activeChip.toLowerCase());
+=======
+  const filtered = products.filter(p => {
+    const matchesChip = activeChip === 'All' || (p.category || '').toLowerCase() === activeChip.toLowerCase();
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesChip && matchesSearch;
+  });
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
 
   const maskCode = (code) => {
     if (!code) return '••••••••';
@@ -89,7 +117,6 @@ export default function ShopPage() {
     return `Valid until ${d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`;
   };
 
-  // Show only active vouchers (not expired)
   const activeVouchers = myVouchers.filter(v => !v.expiresAt || new Date(v.expiresAt) > new Date());
 
   return (
@@ -97,10 +124,28 @@ export default function ShopPage() {
       <Navbar />
       <main className="shop-main">
 
+<<<<<<< HEAD
         {/* Search */}
         <div className="shop-search-wrap">
           <span className="material-symbols-outlined shop-search-icon">shopping_bag</span>
           <input className="shop-search-input" placeholder="Search eco products..." type="text" />
+=======
+        {/* Search Input Bar - Navigates to dedicated /shop/search page */}
+        <div 
+          className="shop-search-wrap" 
+          onClick={() => navigate('/shop/search')}
+          style={{ cursor: 'pointer' }}
+        >
+          <span className="material-symbols-outlined shop-search-icon">search</span>
+          <input 
+            className="shop-search-input" 
+            placeholder="Search eco products..." 
+            type="text" 
+            value={searchQuery}
+            readOnly
+            style={{ cursor: 'pointer' }}
+          />
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
         </div>
 
         {/* Hero */}
@@ -109,6 +154,7 @@ export default function ShopPage() {
             <h1 className="shop-hero-title">Curated for the <span className="shop-hero-accent">Conscious</span></h1>
             <p className="shop-hero-desc">Redeem your hard-earned eco-points for premium sustainable essentials. High impact, zero waste, delivered to your doorstep.</p>
           </div>
+
           <div className="shop-balance-card">
             <div className="shop-balance-icon-wrap">
               <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>eco</span>
@@ -182,13 +228,23 @@ export default function ShopPage() {
         <section className="shop-section">
           <div className="shop-section-header">
             <h3 className="shop-section-title">Sustainable Picks</h3>
-            <span className="shop-view-all-plain">See All</span>
+            <button 
+              className="shop-view-all" 
+              onClick={() => navigate('/shop/search')}
+            >
+              See All
+            </button>
           </div>
 
+<<<<<<< HEAD
           {loading ? (
             <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.6 }}>
               <span className="material-symbols-outlined" style={{ animation: 'spin 1s linear infinite', fontSize: '2rem' }}>progress_activity</span>
             </div>
+=======
+          {productsLoading ? (
+            <Loader text="Loading catalog..." />
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
           ) : (
             <div className="shop-grid">
               {filtered.map(product => (

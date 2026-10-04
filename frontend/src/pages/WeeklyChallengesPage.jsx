@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Navbar from '../components/common/Navbar';
 import BottomNav from '../components/common/BottomNav';
 import { getActiveChallenges } from '../services/api';
@@ -46,25 +47,43 @@ const timeLeft = (deadline) => {
 
 export default function WeeklyChallengesPage() {
   const navigate = useNavigate();
+<<<<<<< HEAD
   const [tab,        setTab]        = useState('All');
   const [challenges, setChallenges] = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState('');
+=======
+  const queryClient = useQueryClient();
+  const [tab, setTab] = useState('All');
+  const [actionError, setActionError] = useState('');
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await getActiveChallenges();
-        setChallenges(data);
-      } catch (err) {
-        setError(err.message || 'Failed to load challenges');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+  const { data: challenges = [], isLoading: loading, error: queryError } = useQuery({
+    queryKey: ['challenges', 'active'],
+    queryFn: async () => {
+      const res = await getActiveChallenges();
+      return res.data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
+  const error = actionError || (queryError ? (queryError.message || 'Failed to load challenges') : '');
+
+<<<<<<< HEAD
   const enriched = challenges.map(ch => ({
+=======
+  const handleJoin = async (challengeId) => {
+    try {
+      setActionError('');
+      await joinChallenge(challengeId);
+      queryClient.invalidateQueries({ queryKey: ['challenges', 'active'] });
+    } catch (err) {
+      setActionError(err.message || 'Failed to join challenge');
+    }
+  };
+
+  const enriched = challenges.map((ch) => ({
+>>>>>>> 069e093 (fix: address frontend issues reported by testers)
     ...ch,
     _status:  deriveStatus(ch),
     _percent: derivePercent(ch),
