@@ -98,7 +98,110 @@ export default function AdminDashboardPage() {
   const inputStyle = {
     width: '100%', padding: '0.75rem', marginBottom: '1rem',
     borderRadius: '8px', border: '1px solid var(--outline-variant)',
+<<<<<<< HEAD
     background: 'var(--surface)', color: 'var(--on-surface)'
+=======
+    background: 'var(--surface)', color: 'var(--on-surface)',
+  };
+
+  const TABS = ['stats', 'challenges', 'bins', 'leaderboard', 'notifications'];
+
+  const loadBinRequests = async (status = 'pending') => {
+    setBinsLoading(true);
+    try {
+      const { data } = await getBinRequests(status);
+      setBinRequests(data.requests || []);
+    } catch (err) {
+      setError(err.message || 'Failed to load bin requests');
+    } finally {
+      setBinsLoading(false);
+    }
+  };
+
+  const handleBinFilter = (status) => {
+    setBinStatusFilter(status);
+    loadBinRequests(status);
+  };
+
+  const handleApproveBin = async (id) => {
+    setReviewingId(id);
+    setError('');
+    try {
+      const { data } = await approveBinRequest(id);
+      setSuccessMsg(data.message || 'Bin approved.');
+      loadBinRequests(binStatusFilter);
+    } catch (err) {
+      setError(err.message || 'Failed to approve bin request');
+    } finally {
+      setReviewingId(null);
+    }
+  };
+
+  const handleRejectBin = async (id) => {
+    const reason = window.prompt('Rejection reason (optional):') || undefined;
+    setReviewingId(id);
+    setError('');
+    try {
+      await rejectBinRequest(id, reason);
+      setSuccessMsg('Bin request rejected.');
+      loadBinRequests(binStatusFilter);
+    } catch (err) {
+      setError(err.message || 'Failed to reject bin request');
+    } finally {
+      setReviewingId(null);
+    }
+  };
+
+  const handlePenalizeRequester = async (request) => {
+    const requesterId = request.requestedBy?._id || request.requestedBy;
+    const amount = Math.floor(Number(penaltyInputs[request._id] || 20));
+    if (!requesterId || !Number.isFinite(amount) || amount <= 0) {
+      setError('Enter a valid penalty amount.');
+      return;
+    }
+    if (!window.confirm(`Deduct ${amount} points from ${request.requestedBy?.name || 'this user'} and reject this report?`)) return;
+    setReviewingId(request._id);
+    setError('');
+    try {
+      const { data } = await penalizeUser(requesterId, amount, 'fake bin report');
+      // A penalized report is rejected automatically — no bin, no award.
+      try {
+        await rejectBinRequest(request._id, `Rejected with penalty: fake bin report (-${amount} pts)`);
+      } catch (rejectErr) {
+        // Penalty went through; surface the reject failure without hiding that.
+        setError(rejectErr.message || 'Penalty applied, but auto-reject failed.');
+        loadBinRequests(binStatusFilter);
+        return;
+      }
+      setSuccessMsg(`${data.message || 'Penalty applied.'} Report rejected.`);
+      loadBinRequests(binStatusFilter);
+    } catch (err) {
+      setError(err.message || 'Failed to apply penalty');
+    } finally {
+      setReviewingId(null);
+    }
+  };
+
+  const handlePenalizeUser = async (e) => {
+    e.preventDefault();
+    if (!penaltyUserId.trim() || !penaltyPoints) {
+      setError('User ID and points are required for a penalty.');
+      return;
+    }
+    setPenalizing(true);
+    setError('');
+    try {
+      const { data } = await penalizeUser(penaltyUserId.trim(), Number(penaltyPoints), penaltyReason.trim() || undefined);
+      setSuccessMsg(data.message || 'Penalty applied.');
+      setPenaltyUserId('');
+      setPenaltyPoints('');
+      setPenaltyReason('');
+    } catch (err) {
+      setError(err.message || 'Failed to apply penalty');
+    } finally {
+      setPenalizing(false);
+    }
+>>>>>>> 7e04cc1 (feat: implement OAuth2 token flow for Google sign-in and enhance user feedback)
   };
 
   return (
