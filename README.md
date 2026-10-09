@@ -1,11 +1,11 @@
 # 🌿 EcoSankalan
 
-> Hyperlocal waste management & recycling platform — NSUT CPVS-STP 2025-26(E)
+> A hyperlocal waste management and recycling platform built for the WeMakeDev hackathon.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 ![Node.js](https://img.shields.io/badge/Node.js-18+-brightgreen)
 ![MongoDB](https://img.shields.io/badge/Database-MongoDB%20Atlas-green)
-![Status](https://img.shields.io/badge/Status-Month%201%20--%20Foundation-blue)
+![Hackathon](https://img.shields.io/badge/WeMakeDev-Hackathon-blue)
 
 ---
 
@@ -17,21 +17,18 @@ EcoSankalan is a community-driven mobile + web app that lets urban residents:
 - **Find** nearby recycling bins and community drives on a live map
 - **Redeem** eco-points in the Eco-Shop (10 pts = ₹1, max 30% discount)
 
-**CPVS Project ID:** `STP2025-26(E)CSE(M)VivekAyush(2024UCS1573)`  
-**Faculty Guide:** Prof. Vivek Mehta  
-**Grant:** ₹10,000 | **Scheme:** NSUT CPVS Short-Term Project  
+The project was created during the **WeMakeDev hackathon** to make sustainable waste disposal easier, more rewarding, and more accessible for local communities.
 
 ---
 
 ## 👥 Team
 
-| Member | Roll No | Role |
-|--------|---------|------|
-| Ayush Kumar Jha | 2024UCS1573 | Team Lead, Backend APIs, DB Schema, SRS |
-| Bhagya Rajan Singh | 2024UCS2135 | Research, surveys, content, thesis |
-| Krishna | 2024UCS1548 | UI/UX design, Figma prototypes |
-| Vipin Gupta | 2024UCS1607 | Frontend React development |
-| Atishay Jain | 2024UCS1510 | Backend infra, MongoDB Atlas, deployment |
+| Member | Role |
+|--------|------|
+| Ayush Kumar Jha | Team Lead, backend APIs, database schema |
+| Krishna | UI/UX design and prototypes |
+| Vipin Gupta | Frontend React development |
+| Atishay Jain | Backend infrastructure, MongoDB Atlas, deployment |
 
 ---
 
@@ -63,8 +60,7 @@ EcoSankalan is a community-driven mobile + web app that lets urban residents:
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/ecosankalan/ecosankalan-codebase.git
-cd ecosankalan-codebase
+git clone https://github.com/Atishay-j-a-in/Ecosankalan.git
 
 # 2. Install dependencies
 npm install
@@ -108,17 +104,17 @@ ecosankalan-codebase/
 │   │   └── validate.js     # express-validator result checker
 │   ├── routes/
 │   │   ├── health.js       # GET /health
-│   │   ├── auth.js         # /api/v1/auth/* (Month 2)
-│   │   ├── users.js        # /api/v1/users/* (Month 2)
-│   │   ├── waste.js        # /api/v1/waste/* (Month 3)
-│   │   ├── bins.js         # /api/v1/bins/* (Month 4)
-│   │   ├── events.js       # /api/v1/events/* (Month 4)
-│   │   ├── products.js     # /api/v1/products/* (Month 5)
-│   │   └── orders.js       # /api/v1/orders/* (Month 5)
-│   ├── controllers/        # Business logic (Month 2+)
-│   ├── models/             # Mongoose schemas (Atishay — Month 1)
+│   │   ├── auth.js         # /api/v1/auth/*
+│   │   ├── users.js        # /api/v1/users/*
+│   │   ├── waste.js        # /api/v1/waste/*
+│   │   ├── bins.js         # /api/v1/bins/*
+│   │   ├── events.js       # /api/v1/events/*
+│   │   ├── products.js     # /api/v1/products/*
+│   │   └── orders.js       # /api/v1/orders/*
+│   ├── controllers/        # Business logic
+│   ├── models/             # Mongoose schemas
 │   └── utils/              # Shared helpers
-├── tests/                  # Jest + Supertest (Month 2)
+├── tests/                  # Jest + Supertest
 ├── .env.example            # Environment variable template
 ├── .gitignore
 ├── package.json
@@ -129,58 +125,44 @@ ecosankalan-codebase/
 
 ## 🗺️ API Surface Area
 
-| Method | Route | Status | Month |
-|--------|-------|--------|-------|
-| GET | `/health` | ✅ Live | 1 |
-| POST | `/api/v1/auth/register` | 🔧 Stub | 2 |
-| POST | `/api/v1/auth/verify-otp` | 🔧 Stub | 2 |
-| POST | `/api/v1/auth/login` | 🔧 Stub | 2 |
-| GET | `/api/v1/users/profile` | 🔧 Stub | 2 |
-| POST | `/api/v1/waste/log` | 🔧 Stub | 3 |
-| GET | `/api/v1/waste/stats` | 🔧 Stub | 3 |
-| GET | `/api/v1/bins?lat&lng&radius` | 🔧 Stub | 4 |
-| POST | `/api/v1/events/:id/rsvp` | 🔧 Stub | 4 |
-| POST | `/api/v1/orders/checkout` | 🔧 Stub | 5 |
+| Method | Route | Status |
+|--------|-------|--------|
+| GET | `/health` | ✅ Live |
+| POST | `/api/v1/auth/register` | 🔧 Stub |
+| POST | `/api/v1/auth/verify-otp` | 🔧 Stub |
+| POST | `/api/v1/auth/login` | 🔧 Stub |
+| GET | `/api/v1/users/profile` | 🔧 Stub |
+| POST | `/api/v1/waste/log` | 🔧 Stub |
+| GET | `/api/v1/waste/stats` | 🔧 Stub |
+| GET | `/api/v1/bins?lat&lng&radius` | 🔧 Stub |
+| POST | `/api/v1/events/:id/rsvp` | 🔧 Stub |
+| POST | `/api/v1/orders/checkout` | 🔧 Stub |
 
-Full API documentation: [Postman Collection](docs/postman/) _(coming Month 2)_
+Full API documentation: [Postman Collection](docs/postman/) _(coming soon)_
 
 ---
 
 ## 📅 Roadmap
 
-| Month | Theme | Key Deliverable |
+| Phase | Theme | Key Deliverable |
 |-------|-------|-----------------|
-| 1 | Foundation | Schema, skeleton, SRS ← **NOW** |
-| 2 | Auth | JWT login, OTP, quiz module |
-| 3 | Waste + AI | Gemini scan, eco-points, dashboard |
-| 4 | Map + Events | Geospatial bins, FCM notifications |
-| 5 | Eco-Shop | Razorpay, eco-points redemption |
-| 6 | Deploy | Android APK, Vercel prod, final report |
-
-**Intermediate Report Deadline:** 26 March 2026  
-**Final Report Deadline:** Before end-semester exams (Month 6)
+| 1 | Foundation | Core schema, backend skeleton, and health check |
+| 2 | Community | Authentication, waste logging, and eco-points |
+| 3 | Discovery | Recycling-bin map and community events |
+| 4 | Rewards | Eco-Shop and points redemption |
+| 5 | Launch | Android wrapper and production deployment |
 
 ---
 
-## 🔐 Compliance
+## 🔐 Responsible Data Use
 
-- **DPDP Act 2023** — Only necessary user data stored; JWT contains userId + role only (no PII)
-- **GFR Rule 154** — All purchases follow government financial rules; GST bills submitted to faculty guide
-- **MongoDB Atlas** — Data encrypted in transit (TLS) and at rest (M10+)
-
----
-
-## 🤝 Contributing
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting PRs.
-
-Branch strategy:
-- `main` — production-ready code only
-- `dev` — integration branch; all PRs merge here first
-- `feature/your-feature-name` — your working branch
+- Store only the user data required for the app to work.
+- Keep authentication tokens limited to the information needed for authorization.
+- Use secure environment variables for database credentials, API keys, and other secrets.
+- MongoDB Atlas provides encryption in transit and at rest.
 
 ---
 
 ## 📄 License
 
-MIT © 2026 EcoSankalan Team, NSUT Delhi
+MIT © 2026 EcoSankalan Team
