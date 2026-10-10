@@ -1,738 +1,323 @@
-# 🌿 EcoSankalan
+# EcoSankalan
 
-> A hyperlocal waste management and recycling platform built for the WeMakeDev hackathon.
+> An AI-assisted, hyperlocal waste-management platform that helps people log waste, discover nearby collection points, participate in community activities, and earn eco-points.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Node.js](https://img.shields.io/badge/Node.js-18+-brightgreen)
-![MongoDB](https://img.shields.io/badge/Database-MongoDB%20Atlas-green)
-![Hackathon](https://img.shields.io/badge/WeMakeDev-Hackathon-blue)
+[![Node.js: 18+](https://img.shields.io/badge/Node.js-18%2B-brightgreen.svg)](https://nodejs.org/)
+[![Frontend: React + Vite](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-646CFF.svg)](https://vitejs.dev/)
+[![Database: MongoDB](https://img.shields.io/badge/Database-MongoDB%20%2B%20Mongoose-47A248.svg)](https://www.mongodb.com/)
 
----
+## Overview
 
-## 📋 Project Overview
+EcoSankalan combines a React single-page application with an Express/MongoDB API. The product is designed around a simple loop:
 
-EcoSankalan is a community-driven mobile + web app that lets urban residents:
-- **Log** household waste (manual or AI-powered photo scan via Gemini Vision)
-- **Earn** eco-points for waste logging and community event participation
-- **Find** nearby recycling bins and community drives on a live map
-- **Redeem** eco-points in the Eco-Shop (10 pts = ₹1, max 30% discount)
+1. A resident records a waste item manually or uploads an image for AI classification.
+2. The API stores the waste log and calculates eco-points and estimated CO₂ savings.
+3. The resident tracks impact, discovers nearby bins and events, and completes challenges.
+4. Eco-points can be used to unlock available partner vouchers.
 
-The project was created during the **WeMakeDev hackathon** to make sustainable waste disposal easier, more rewarding, and more accessible for local communities.
+The repository also contains administration routes for bins, events, vouchers, and platform statistics.
 
----
+## Features
 
-## 👥 Team
+### User-facing features
 
-| Member | Role |
-|--------|------|
-| Ayush Kumar Jha | Team Lead, backend APIs, database schema |
-| Krishna | UI/UX design and prototypes |
-| Vipin Gupta | Frontend React development |
-| Atishay Jain | Backend infrastructure, MongoDB Atlas, deployment |
+- Email/password registration and login.
+- Google sign-in through Google ID-token verification.
+- JWT-based protected API access.
+- Waste logging by category, quantity, unit, description, and logging method.
+- Waste history with pagination and category filtering.
+- Waste statistics for week, month, or all-time ranges.
+- AI waste-image analysis using OpenAI vision models.
+- Nearby recycling-bin discovery using geospatial MongoDB queries.
+- Community event listing, upcoming-event discovery, and RSVP.
+- Weekly challenges with per-task progress and reward issuance.
+- Eco-points and CO₂-saved tracking.
+- Partner-product browsing and redirect links.
+- Voucher inventory, user voucher history, and point-based voucher unlocking.
+- Profile retrieval, profile updates, points, badges, and avatar upload endpoints.
+- Admin statistics and management endpoints for vouchers, bins, and events.
 
----
+### Frontend surfaces
 
-## 🛠️ Tech Stack
+The React application includes route-level screens for authentication, dashboard, waste logging, impact, shop and product details, community, profile, learning and quiz flows, AI scan results, waste history, challenges, events, vouchers, and administration.
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React.js + Tailwind CSS |
-| Mobile | Median.co (Android APK wrapper) |
-| Backend | Node.js + Express.js (MVC) |
-| Database | MongoDB Atlas (Mongoose ODM) |
-| AI | Google Gemini 1.5 Flash (Vision) |
-| Maps | OpenStreetMap + Leaflet.js |
-| Auth | JWT + bcrypt + OTP (MSG91) |
-| Payments | Razorpay |
-| Push Notifs | Firebase FCM |
-| Hosting | Vercel |
-
----
-
-## 🚀 Getting Started (Backend)
-
-### Prerequisites
-- Node.js v18+
-- MongoDB Atlas account (free M0 tier)
-- Git
-
-### Setup
-
-```bash
-# 1. Clone the repo
-git clone https://github.com/Atishay-j-a-in/Ecosankalan.git
-
-# 2. Install dependencies
-npm install
-
-# 3. Set up environment variables
-cp .env.example .env
-# Edit .env and fill in your MongoDB URI and JWT secret
-
-# 4. Start development server
-npm run dev
-
-# 5. Verify it's working
-curl http://localhost:5000/health
-```
-
-Expected response:
-```json
-{
-  "success": true,
-  "project": "EcoSankalan",
-  "server": "running",
-  "database": "connected"
-}
-```
-
----
-
-## 📁 Project Structure
-
-```
-ecosankalan-codebase/
-├── src/
-│   ├── app.js              # Express app (middleware + routes)
-│   ├── server.js           # HTTP server entry point
-│   ├── config/
-│   │   ├── database.js     # MongoDB Atlas connection
-│   │   └── logger.js       # Winston structured logger
-│   ├── middleware/
-│   │   ├── auth.js         # JWT protect + authorize middleware
-│   │   ├── errorHandler.js # Global error + 404 handler
-│   │   └── validate.js     # express-validator result checker
-│   ├── routes/
-│   │   ├── health.js       # GET /health
-│   │   ├── auth.js         # /api/v1/auth/*
-│   │   ├── users.js        # /api/v1/users/*
-│   │   ├── waste.js        # /api/v1/waste/*
-│   │   ├── bins.js         # /api/v1/bins/*
-│   │   ├── events.js       # /api/v1/events/*
-│   │   ├── products.js     # /api/v1/products/*
-│   │   └── orders.js       # /api/v1/orders/*
-│   ├── controllers/        # Business logic
-│   ├── models/             # Mongoose schemas
-│   └── utils/              # Shared helpers
-├── tests/                  # Jest + Supertest
-├── .env.example            # Environment variable template
-├── .gitignore
-├── package.json
-└── README.md
-```
-
----
-
-## 🗺️ API Surface Area
-
-| Method | Route | Status |
-|--------|-------|--------|
-| GET | `/health` | ✅ Live |
-| POST | `/api/v1/auth/register` | 🔧 Stub |
-| POST | `/api/v1/auth/verify-otp` | 🔧 Stub |
-| POST | `/api/v1/auth/login` | 🔧 Stub |
-| GET | `/api/v1/users/profile` | 🔧 Stub |
-| POST | `/api/v1/waste/log` | 🔧 Stub |
-| GET | `/api/v1/waste/stats` | 🔧 Stub |
-| GET | `/api/v1/bins?lat&lng&radius` | 🔧 Stub |
-| POST | `/api/v1/events/:id/rsvp` | 🔧 Stub |
-| POST | `/api/v1/orders/checkout` | 🔧 Stub |
-
-Full API documentation: [Postman Collection](docs/postman/) _(coming soon)_
-
----
-
-## 📅 Roadmap
-
-| Phase | Theme | Key Deliverable |
-|-------|-------|-----------------|
-| 1 | Foundation | Core schema, backend skeleton, and health check |
-| 2 | Community | Authentication, waste logging, and eco-points |
-| 3 | Discovery | Recycling-bin map and community events |
-| 4 | Rewards | Eco-Shop and points redemption |
-| 5 | Launch | Android wrapper and production deployment |
-
----
-
-## 🔐 Responsible Data Use
-
-- Store only the user data required for the app to work.
-- Keep authentication tokens limited to the information needed for authorization.
-- Use secure environment variables for database credentials, API keys, and other secrets.
-- MongoDB Atlas provides encryption in transit and at rest.
-
----
-
-## 📄 License
-
-<<<<<<< HEAD
-MIT © 2026 EcoSankalan Team
-=======
-```bash
-cd frontend
-
-npm install
-
-cd ..
-```
-
----
-
-# 🔐 Environment Variables
-
-### Backend (.env)
-
-```env
-PORT=5000
-
-NODE_ENV=development
-
-MONGO_URI=your_mongodb_connection_string
-
-JWT_SECRET=your_secret_key
-
-OPENAI_API_KEY=your_openai_api_key
-
-CLIENT_URL=http://localhost:5173
-```
-
----
-
-### Frontend (.env.local)
-
-```env
-VITE_API_URL=http://localhost:5000
-
-
-```
-
----
-
-# ▶ Running the Project
-
-## Backend
-
-```bash
-npm run dev
-```
-
-Runs on
-
-```
-http://localhost:5000
-```
-
----
-
-## Frontend
-
-```bash
-cd frontend
-
-npm run dev
-```
-
-Runs on
-
-```
-http://localhost:5173
-```
-
----
-
-# 🚀 Deployment
-
-The project is deployed using **Vercel** and **MongoDB Atlas**.
-
-| Service | Purpose |
-|----------|----------|
-| Vercel | Frontend Hosting |
-| Vercel | Backend Hosting |
-| MongoDB Atlas | Cloud Database |
-| GitHub | Version Control |
-
-Deployment is fully automated through GitHub integration with Vercel.
-
----
-
-# 📡 API Overview
-
-The backend exposes RESTful APIs secured using JWT Authentication.
-
-| Module | Description |
-|----------|-------------|
-| Authentication | Registration, Login, Google OAuth |
-| Users | User Profile & Statistics |
-| Waste | Waste Logging & History |
-| AI | AI Waste Classification |
-| Bin Locator | Nearby Recycling Bins |
-| Challenges | Weekly Challenges |
-| Events | Community Cleanup Drives |
-| Rewards | Eco Shop & Voucher Redemption |
-| Leaderboard | User Rankings |
-| Admin | Platform Management |
-
----
-
-# 🔐 Authentication Flow
+## Architecture
 
 ```text
-          User
-            │
-            ▼
-     Login / Google OAuth
-            │
-            ▼
-     Credential Validation
-            │
-            ▼
-        JWT Generated
-            │
-            ▼
-     Protected API Access
+┌──────────────────────────────────────────────────────────────┐
+│ React + Vite SPA                                             │
+│ frontend/src                                                  │
+│                                                              │
+│ Pages → shared components → services/api.js                  │
+│   │              │                    │                       │
+│   └── Router     └── Auth/UI state    └── HTTP requests       │
+└──────────────────────────────┬───────────────────────────────┘
+                               │ REST / JSON
+                               ▼
+┌──────────────────────────────────────────────────────────────┐
+│ Express API                                                   │
+│ src/app.js                                                    │
+│                                                              │
+│ Helmet → CORS → parsers → compression → logging              │
+│       → rate limiting → versioned routes                      │
+│       → 404 handler → error handler                           │
+└───────────────┬───────────────────────┬──────────────────────┘
+                │                       │
+                ▼                       ▼
+       JWT/RBAC middleware       Controllers/services
+                │                       │
+                └───────────────┬───────┘
+                                ▼
+┌──────────────────────────────────────────────────────────────┐
+│ MongoDB Atlas via Mongoose                                    │
+│ Users, waste logs, bins, events, challenges, progress,        │
+│ products, vouchers, orders, and partner products              │
+└──────────────────────────────────────────────────────────────┘
+
+External integrations:
+  OpenAI vision · Google OAuth · Cloudinary · OpenStreetMap/Overpass
 ```
 
----
-
-# 🤖 AI Waste Classification Workflow
+### Request flow
 
 ```text
-Upload Image
-
-      │
-
-      ▼
-
-Image Validation
-
-      │
-
-      ▼
-
-GPT-4o Vision Analysis
-
-      │
-
-      ▼
-
-Waste Classification
-
-      │
-
-      ▼
-
-Material Detection
-
-      │
-
-      ▼
-
-Confidence Score
-
-      │
-
-      ▼
-
-Disposal Recommendation
+Browser
+  │
+  ├─ public auth request ───────────────► /api/v1/auth/*
+  │
+  └─ authenticated request
+       │
+       ▼
+    global rate limiter
+       │
+       ▼
+    protect middleware ──► authorize(role...) where required
+       │
+       ▼
+    route handler
+       │
+       ├─ Mongoose model queries
+       ├─ rewardEngine for challenge rewards
+       └─ OpenAI/Cloudinary integration for media workflows
+       │
+       ▼
+    JSON response
 ```
 
----
+### Backend responsibilities
 
-# 📍 Smart Bin Locator
+- `src/server.js` loads environment variables, connects to MongoDB, starts the HTTP listener, and handles graceful shutdown.
+- `src/app.js` creates the testable Express application and wires middleware and routes.
+- `src/routes/` defines the HTTP API surface.
+- `src/middleware/` provides JWT/RBAC, upload, validation, and error handling.
+- `src/controllers/` contains larger request workflows such as AI scanning and profile management.
+- `src/services/` contains cross-route business logic such as challenge rewards.
+- `src/models/` defines MongoDB collections and indexes.
+- `src/config/` owns database, logging, AI, Cloudinary, and prompt/schema configuration.
+- `src/utils/` contains response, async, and AI-input helpers.
 
-Nearby recycling bins are identified using MongoDB's geospatial indexing.
-
-```text
-User Location
-
-      │
-
-      ▼
-
-Latitude & Longitude
-
-      │
-
-      ▼
-
-MongoDB 2dsphere Index
-
-      │
-
-      ▼
-
-$near Query
-
-      │
-
-      ▼
-
-Sorted Nearby Bins
-```
-
----
-
-# 🗄 Database Design
-
-EcoSankalan uses MongoDB Atlas with Mongoose ODM.
-
-### Collections
-
-- Users
-- WasteLogs
-- Bins
-- Events
-- Challenges
-- ChallengeProgress
-- Products
-- Vouchers
-- Orders
-
----
-
-## Entity Relationship
+### Data relationships
 
 ```text
 User
- │
- ├──────────────┐
- │              │
- ▼              ▼
+ ├── WasteLog[] ──► points and CO₂ statistics
+ ├── ChallengeProgress[] ──► Challenge
+ ├── Voucher[] assigned to the user
+ ├── Event[] RSVP membership
+ └── Order[] ──► cart and checkout workflows
 
-WasteLogs    Challenges
-
- │              │
-
- ▼              ▼
-
-EcoPoints   Badges
-
-      │
-
-      ▼
-
-Voucher Redemption
-
-      │
-
-      ▼
-
-Partner Products
+PartnerProduct[] ──► product catalogue and external redirect
+Bin[] ─────────────► geospatial nearby-bin queries
 ```
 
----
+## Repository structure
 
-# 🔒 Security
+```text
+ecosankalan-codebase/
+├── frontend/
+│   ├── public/                 Static assets and service-worker file
+│   ├── src/
+│   │   ├── components/         Auth, navigation, map, and shared UI
+│   │   ├── context/            Notification and application state
+│   │   ├── hooks/              Reusable React hooks
+│   │   ├── lib/                Geocoding, Overpass, parsing, and location helpers
+│   │   ├── pages/              Route-level React screens
+│   │   ├── services/api.js     Axios API client
+│   │   └── styles/             Page and global styles
+│   ├── index.html
+│   ├── package.json
+│   └── vite.config.js
+├── src/
+│   ├── config/
+│   ├── controllers/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   ├── services/
+│   ├── utils/
+│   ├── app.js                  Express application factory
+│   ├── seedProducts.js         Product seeding script
+│   └── server.js               Production/development entry point
+├── tests/                      Jest + Supertest backend tests
+├── .env.example                Backend environment template
+├── MOBILE_TESTING.md           Mobile testing notes
+├── package.json                Backend manifest
+└── README.md
+```
 
-Security has been implemented at multiple layers.
+## Technology stack
 
-- JWT Authentication
-- Google OAuth Verification
-- Password Hashing using bcrypt
-- Helmet Security Headers
-- CORS Protection
-- API Rate Limiting
-- Secure Environment Variables
-- Input Validation
-- Role-Based Access Control
-- Protected API Routes
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, React Router, Vite, Axios |
+| Styling | CSS files under `frontend/src/styles` |
+| Backend | Node.js 18+, Express 4 |
+| Database | MongoDB with Mongoose 8 |
+| Authentication | JWT, bcryptjs, Google OAuth token verification |
+| AI | OpenAI vision API with structured JSON output |
+| Maps | Leaflet, OpenStreetMap/Overpass helpers |
+| Media | Multer uploads and optional Cloudinary storage |
+| API hardening | Helmet, CORS, compression, Morgan, express-rate-limit |
+| Testing | Jest and Supertest |
+| Hosting target | MongoDB Atlas and Vercel-compatible deployment |
 
----
+## API surface
 
-# ⚡ Performance Optimizations
+All versioned routes are mounted below `/api/v1`. Routes marked **stub** currently return `501 Not Implemented`.
 
-To ensure a smooth user experience, several optimizations have been implemented.
+| Area | Endpoints | Status |
+|---|---|---|
+| Health | `GET /health`, `GET /` | Implemented |
+| Auth | `POST /auth/register`, `/login`, `/google` | Implemented |
+| Auth | `POST /auth/refresh`, `/logout` | Stub |
+| Users | `GET/PUT /users/profile`, `PUT /users/profile/avatar` | Implemented |
+| Users | `GET /users/points`, `/badges` | Implemented |
+| Waste | `POST /waste/log`, `GET /waste/history`, `GET /waste/stats` | Implemented |
+| Waste/AI | `POST /waste/scan`, `POST /ai/analyze` | Implemented; multipart key is `images` |
+| Bins | `GET /bins`, admin create/update/delete | Implemented |
+| Events | list, upcoming, create, RSVP, update, delete | Implemented |
+| Challenges | active, progress, history | Implemented |
+| Products | list, detail, redirect, admin/seller mutations | Implemented |
+| Vouchers | `GET /vouchers/my`, `POST /vouchers/unlock` | Implemented |
+| Admin | voucher creation/stats and platform stats | Implemented |
+| Orders | cart, checkout, history, detail | Stub |
 
-- MongoDB 2dsphere Geospatial Indexing
-- Cached Dashboard Statistics
-- Optimized Database Queries
-- Response Compression
-- Lazy Loading Components
-- Efficient API Design
-- Atomic Voucher Redemption
-- Optimized Image Upload Flow
+Protected routes require:
 
----
+```http
+Send the JWT in the request authorization header.
+```
 
-# 📱 Progressive Web App
+## Local setup
 
-EcoSankalan is built as a Progressive Web Application.
+### Prerequisites
 
-### Features
+- Node.js 18 or newer.
+- npm.
+- A MongoDB database (MongoDB Atlas is supported).
+- Provider credentials for the integrations you intend to use.
 
-- Installable on Android & iOS
-- Responsive Design
-- Offline Support
-- Home Screen Installation
-- Fast Loading
-- Native App-like Experience
-
-### Installation
-
-**Android**
-
-Chrome → Menu → Add to Home Screen
-
-**iOS**
-
-Safari → Share → Add to Home Screen
-
----
-
-# 📊 Project Highlights
-
-| Metric | Value |
-|---------|------|
-| React Components | 30+ |
-| Pages | 20+ |
-| REST APIs | 15+ |
-| MongoDB Collections | 9+ |
-| Authentication Methods | 2 |
-| AI Integration | GPT-4o Vision |
-| Progressive Web App | ✅ |
-| Mobile Responsive | ✅ |
-
----
-
-# 🌱 Sustainability Impact
-
-EcoSankalan encourages environmentally responsible behavior through technology.
-
-Users can:
-
-- Measure Carbon Reduction
-- Track Recycling History
-- Participate in Community Events
-- Earn EcoPoints
-- Redeem Sustainable Rewards
-
-The platform aims to bridge the gap between technology and environmental responsibility by making sustainable actions engaging and rewarding.
-
----
-
-# 🗺️ Roadmap
-
-EcoSankalan is continuously evolving. The following features are planned for future releases.
-
-### Short Term
-
-- Push Notifications
-- AI Disposal Recommendations
-- Better Reward Marketplace
-- QR Code-based Waste Logging
-- Community Event Calendar
-
-### Long Term
-
-- Native Android & iOS Applications
-- Smart Bin IoT Integration
-- AI Voice Assistant
-- NGO Management Portal
-- Carbon Credit Marketplace
-- Multi-language Support
-- Municipal Dashboard
-- Analytics using Machine Learning
-
----
-
-# 🧪 Testing
-
-The project has been tested across major browsers and devices to ensure a smooth user experience.
-
-### Functional Testing
-
-- ✅ User Registration
-- ✅ User Login
-- ✅ Google OAuth
-- ✅ JWT Authentication
-- ✅ Waste Logging
-- ✅ AI Waste Classification
-- ✅ Bin Locator
-- ✅ EcoPoints System
-- ✅ Rewards Redemption
-- ✅ Community Events
-- ✅ Admin Dashboard
-
----
-
-### UI Testing
-
-- ✅ Responsive Layout
-- ✅ Mobile Friendly
-- ✅ Tablet Support
-- ✅ Desktop Support
-- ✅ Cross Browser Compatibility
-
----
-
-### Performance Testing
-
-- ✅ Optimized API Responses
-- ✅ Lazy Loading
-- ✅ Efficient MongoDB Queries
-- ✅ Compressed Assets
-- ✅ Fast Initial Load
-
----
-
-# 🤝 Contributing
-
-Contributions are always welcome!
-
-If you would like to contribute to EcoSankalan:
-
-1. Fork the repository.
-
-2. Create a feature branch.
+### Backend
 
 ```bash
-git checkout -b feature/amazing-feature
+npm install
+copy .env.example .env
+npm run dev
 ```
 
-3. Commit your changes.
+The API defaults to `http://localhost:5000`.
+
+Useful commands:
 
 ```bash
-git commit -m "Add amazing feature"
+npm start                 # Start the API
+npm run dev               # Start with nodemon
+npm test -- --runInBand   # Run backend tests
 ```
 
-4. Push to your branch.
+### Frontend
 
 ```bash
-git push origin feature/amazing-feature
+cd frontend
+npm install
+npm run dev
 ```
 
-5. Open a Pull Request.
+Vite normally serves the frontend at `http://localhost:5173`.
 
-Please ensure your code follows the project's coding standards and includes meaningful commit messages.
+Create `frontend/.env.local` with the API origin:
 
----
+```env
+VITE_API_URL=http://localhost:5000
+VITE_GOOGLE_CLIENT_ID=your_google_web_client_id
+```
 
-# 💻 Local Development Guidelines
+## Environment variables
 
-Before creating a Pull Request:
+The backend reads the following values. Optional integrations can remain empty until their features are enabled.
 
-- Follow consistent coding conventions.
-- Write reusable components.
-- Keep commits small and descriptive.
-- Test your changes locally.
-- Never commit API keys or secrets.
+```env
+NODE_ENV=development
+PORT=5000
+MONGODB_URI=mongodb+srv://...
+JWT_SECRET=replace_with_a_long_random_secret
+JWT_EXPIRES_IN=7d
+GOOGLE_CLIENT_ID=your_google_web_client_id
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_VISION_MODEL=gpt-4o-mini
+MAX_AI_FILES=5
+MAX_AI_FILE_SIZE=10485760
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+CLOUDINARY_AVATAR_FOLDER=ecosankalan/avatars
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+ALLOWED_ORIGINS=http://localhost:5173
+ALLOWED_REDIRECT_DOMAINS=
+```
 
----
+Never commit `.env`, API keys, database credentials, or provider secrets.
 
-# 📄 License
+## Testing and verification
 
-This project is distributed under the **MIT License**.
+Backend tests are in `tests/` and cover health, authentication, bins, challenges, events, models, products, rewards, vouchers, waste, and waste statistics.
 
-You are free to use, modify, and distribute this software under the terms of the MIT License.
+The recommended verification sequence is:
 
-See the `LICENSE` file for more details.
+```bash
+npm install
+npm test -- --runInBand
+cd frontend
+npm install
+npm run build
+```
 
----
+## Security model
 
-# 🙏 Acknowledgements
+- Passwords are hashed with bcryptjs before storage.
+- JWT payloads contain the user identifier and role rather than profile data.
+- `protect` validates bearer tokens; `authorize` enforces role-based access.
+- Helmet adds security headers.
+- CORS is configurable through `ALLOWED_ORIGINS`.
+- API requests are rate-limited under `/api`.
+- Multer limits AI upload count and file size.
+- Secrets are supplied through environment variables.
 
-This project would not have been possible without the amazing open-source ecosystem.
+## License
 
-Special thanks to:
+EcoSankalan is distributed under the [MIT License](LICENSE).
 
-- OpenAI
-- React
-- Node.js
-- Express.js
-- MongoDB Atlas
-- Vercel
-- Google OAuth
-- Vite
-- GitHub
+## Team
 
-We also acknowledge the guidance and support provided by **Netaji Subhas University of Technology (NSUT)** under the **CPVS-STP 2025–26(E)** program.
+| Member | Role |
+|---|---|
+| Ayush Kumar Jha | Team Lead, backend APIs, and database schema |
+| Krishna | UI/UX design and prototypes |
+| Vipin Gupta | Frontend React development |
+| Atishay Jain | Backend infrastructure, MongoDB Atlas, and deployment |
 
----
+- Website: `https://your-project-website.example`
 
-# 👨‍💻 Team
-
-<table>
-<tr>
-<td align="center">
-<b>Vipin Gupta</b><br>
-Full Stack Developer
-</td>
-
-<td align="center">
-<b>Krishna</b><br>
-Frontend Lead
-</td>
-
-<td align="center">
-<b>Atishay Jain</b><br>
-Full Stack Developer
-</td>
-
-<td align="center">
-<b>Bhagya Ranjan Singh</b><br>
-Frontend & Research
-</td>
-
-<td align="center">
-<b>Ayush Jha</b><br>
-Full Stack Developer
-</td>
-</tr>
-</table>
-
-
----
-
-# 📬 Contact
-
-For suggestions, collaborations, or feedback:
-
-📧 **Email:** ecosankalan@gmail.com
-
-🌐 **Project:** https://ecosankalan.in
-📂 **Repository:**(https://github.com/ecosankalan/ecosankalan-codebase)
-
----
-
-# ⭐ Show Your Support
-
-If you found this project helpful,
-
-⭐ Star the repository
-
-🍴 Fork it
-
-🛠️ Contribute
-
-📢 Share it with others
-
-Every contribution helps us build a more sustainable future.
-
----
-
-# 🌱 Why EcoSankalan?
-
-> **"Small actions create a greener tomorrow."**
-
-EcoSankalan demonstrates how modern technologies such as **Artificial Intelligence**, **Geospatial Computing**, **Cloud Infrastructure**, and **Progressive Web Applications** can be combined to solve real-world environmental challenges.
-
-The project is more than a waste management application—it's an initiative to encourage sustainable habits, empower communities, and leverage technology for social impact.
-
----
-
-<div align="center">
-
-## 🌿 EcoSankalan
-
-### AI-Powered Hyperlocal Waste Management Platform
-
-Built with ❤️ using **React • Node.js • MongoDB • OpenAI • Vercel**
-
-**Made at Netaji Subhas University of Technology (NSUT)**
-
-### ♻️ Reduce • Recycle • Reward • Repeat
-
-⭐ **If you like this project, please give it a Star!**
-
-</div>
->>>>>>> 7e04cc1 (feat: implement OAuth2 token flow for Google sign-in and enhance user feedback)
+> Reduce • Recycle • Reward • Repeat
