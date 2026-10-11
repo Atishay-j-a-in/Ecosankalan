@@ -189,8 +189,7 @@ All versioned routes are mounted below `/api/v1`. Routes marked **stub** current
 | Area | Endpoints | Status |
 |---|---|---|
 | Health | `GET /health`, `GET /` | Implemented |
-| Auth | `POST /auth/register`, `/login`, `/google` | Implemented |
-| Auth | `POST /auth/refresh`, `/logout` | Stub |
+| Auth | `POST /auth/sync`, `GET /auth/me` (Appwrite JWT verified server-side) | Implemented |
 | Users | `GET/PUT /users/profile`, `PUT /users/profile/avatar` | Implemented |
 | Users | `GET /users/points`, `/badges` | Implemented |
 | Waste | `POST /waste/log`, `GET /waste/history`, `GET /waste/stats` | Implemented |
@@ -198,16 +197,29 @@ All versioned routes are mounted below `/api/v1`. Routes marked **stub** current
 | Bins | `GET /bins`, admin create/update/delete | Implemented |
 | Events | list, upcoming, create, RSVP, update, delete | Implemented |
 | Challenges | active, progress, history | Implemented |
+| Challenges (admin) | `GET /challenges/admin`, `POST /challenges`, `PUT /challenges/:id`, `DELETE /challenges/:id` (deactivate) | Implemented |
 | Products | list, detail, redirect, admin/seller mutations | Implemented |
 | Vouchers | `GET /vouchers/my`, `POST /vouchers/unlock` | Implemented |
 | Admin | voucher creation/stats and platform stats | Implemented |
 | Orders | cart, checkout, history, detail | Stub |
 
-Protected routes require:
+Protected routes require an Appwrite JWT (frontend creates one per request via `account.createJWT()`):
 
 ```http
-Send the JWT in the request authorization header.
+Authorization: Bearer <appwrite-jwt>
 ```
+
+## Guest judge login
+
+Judges can explore everything (including admin screens) without signing up via the **Continue as Guest** button on the login page. It signs in with a shared demo account that the backend promotes to admin on `/auth/sync` (see `ADMIN_EMAILS`).
+
+One-time setup:
+
+1. Appwrite console → Auth → Create user: email `guest@ecosankalan.app`, name `Guest Judge`, password = `VITE_GUEST_PASSWORD` from `frontend/.env`. Mark the email verified.
+2. Backend `.env`: ensure `ADMIN_EMAILS` includes `guest@ecosankalan.app` (restart the API).
+3. Frontend `.env`: ensure `VITE_GUEST_EMAIL` / `VITE_GUEST_PASSWORD` match step 1 (rebuild).
+
+Treat the guest password as public — anyone with the bundle can read it. Rotate it after judging, and note the guest admin can create events, approve bins, and import vouchers.
 
 ## Local setup
 
@@ -261,9 +273,10 @@ The backend reads the following values. Optional integrations can remain empty u
 NODE_ENV=development
 PORT=5000
 MONGODB_URI=mongodb+srv://...
-JWT_SECRET=replace_with_a_long_random_secret
-JWT_EXPIRES_IN=7d
-GOOGLE_CLIENT_ID=your_google_web_client_id
+APPWRITE_ENDPOINT=https://<REGION>.cloud.appwrite.io/v1
+APPWRITE_PROJECT_ID=your-appwrite-project-id
+APPWRITE_API_KEY=your-server-api-key
+ADMIN_EMAILS=teammate1@nsut.ac.in,teammate2@nsut.ac.in
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_VISION_MODEL=gpt-4o-mini
 MAX_AI_FILES=5
@@ -272,8 +285,8 @@ CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 CLOUDINARY_AVATAR_FOLDER=ecosankalan/avatars
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=60
 ALLOWED_ORIGINS=http://localhost:5173
 ALLOWED_REDIRECT_DOMAINS=
 ```
@@ -296,12 +309,12 @@ npm run build
 
 ## Security model
 
-- Passwords are hashed with bcryptjs before storage.
-- JWT payloads contain the user identifier and role rather than profile data.
-- `protect` validates bearer tokens; `authorize` enforces role-based access.
+- Auth lives in Appwrite (email/password + Google OAuth); the backend verifies Appwrite JWTs per request via `node-appwrite` and links/creates the MongoDB user by `appwriteUserId` (email fallback for legacy accounts).
+- Legacy local passwords (bcryptjs) are retained read-only for old rows; new users have no local password.
+- `protect` verifies the Appwrite JWT and attaches `{ userId, email, role, appwriteUserId }`; `authorize` enforces role-based access.
 - Helmet adds security headers.
 - CORS is configurable through `ALLOWED_ORIGINS`.
-- API requests are rate-limited under `/api`.
+- API requests are rate-limited under `/api` (60/min default).
 - Multer limits AI upload count and file size.
 - Secrets are supplied through environment variables.
 

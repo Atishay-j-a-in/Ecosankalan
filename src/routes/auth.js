@@ -1,159 +1,75 @@
 /**
  * routes/auth.js
- * Authentication routes — stubs for Month 2 implementation.
+ * Authentication routes — Appwrite integration.
  *
- * These routes are intentionally stubbed (returning 501 Not Implemented)
- * so the folder structure is in place for Month 2. Atishay can see the
- * API surface area and plan accordingly.
+ * Appwrite handles:
+ *   - User registration (email/password, Google OAuth)
+ *   - User login (email/password, Google OAuth)
+ *   - Session management
+ *   - Password recovery
  *
- * Month 2 will implement:
- *   POST /auth/register  → create user, send OTP via MSG91
- *   POST /auth/verify-otp → verify OTP, issue JWT
- *   POST /auth/login     → login with email+password, issue JWT
- *   POST /auth/refresh   → refresh JWT using refresh token
- *   POST /auth/logout    → invalidate refresh token
+ * This file handles:
+ *   - POST /sync — Find or create MongoDB user from Appwrite identity
+ *   - GET /me — Return current MongoDB user profile
+ *
+ * Legacy JWT routes (/register, /login, /google, /refresh, /logout) were
+ * removed in the Appwrite cutover. Old localStorage `token` values are ignored.
  */
 
 const express = require('express');
-const jwt = require('jsonwebtoken');
-const { OAuth2Client } = require('google-auth-library');
-const User = require('../models/User');
 const { protect } = require('../middleware/auth');
+const User = require('../models/User');
 
 const router = express.Router();
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-const generateToken = (user) => {
-  return jwt.sign(
-    { userId: user._id, role: user.role },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '30d' }
-  );
-};
+// Admin bootstrap: comma-separated emails promoted to admin on sync.
+// Example: ADMIN_EMAILS=vipin.gupta.ug24@nsut.ac.in,teammate@nsut.ac.in
+const adminEmails = () =>
+  (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
 
-router.post('/register', async (req, res) => {
+/**
+ * POST /api/v1/auth/sync
+ * Protected. Called by the frontend after Appwrite authentication.
+ *
+ * Finds or creates the MongoDB user matching the Appwrite identity.
+ * Returns the full MongoDB user profile.
+ */
+router.post('/sync', protect, async (req, res) => {
   try {
-    const { name, email, phone, password } = req.body;
-    
-    // Check if user exists
-    const userExists = await User.findOne({ $or: [{ email }, { phone }] });
-    if (userExists) {
-      return res.status(400).json({ success: false, message: 'User with this email or phone already exists.' });
-    }
-    
-    // Create new user (setting isVerified to true for local dev/CPVS evaluation)
-    const user = await User.create({
-      name,
-      email,
-      phone: phone || ('9' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0')), // Fallback for CPVS if frontend omits it
-      password,
-      isVerified: true
-    });
-    
-    const token = generateToken(user);
-    
-    res.status(201).json({
-      success: true,
-      token,
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        ecoPoints: user.ecoPoints
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findById(req.user.userId);
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
-    
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+    // Promote configured admin emails without a redeploy-time code change.
+    if (adminEmails().includes(String(user.email || '').toLowerCase()) && user.role !== 'admin') {
+      user.role = 'admin';
+      await user.save();
     }
-    
-    const token = generateToken(user);
-    
-    res.status(200).json({
-      success: true,
-      token,
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        ecoPoints: user.ecoPoints
-      }
-    });
+    return res.status(200).json({ success: true, user });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Auth sync error:', error);
+    return res.status(500).json({ success: false, message: 'Server error during sync' });
   }
 });
 
-router.post('/google', async (req, res) => {
+/**
+ * GET /api/v1/auth/me
+ * Protected. Returns the current authenticated user's MongoDB profile.
+ */
+router.get('/me', protect, async (req, res) => {
   try {
-    const { token } = req.body;
-    
-    // Verify Google ID token
-    const ticket = await client.verifyIdToken({
-      idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-    
-    const payload = ticket.getPayload();
-    const { email, name, picture } = payload;
-    
-    // Check if user exists
-    let user = await User.findOne({ email });
-    
+    const user = await User.findById(req.user.userId);
     if (!user) {
-      // Create user if they don't exist
-      user = await User.create({
-        name,
-        email,
-        phone: '9' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0'), // Fake phone to pass validation
-        password: Math.random().toString(36).slice(-10) + 'Aa1!', // Random secure password
-        avatarUrl: picture,
-        isVerified: true
-      });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
-    
-    const authToken = generateToken(user);
-    
-    res.status(200).json({
-      success: true,
-      token: authToken,
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        ecoPoints: user.ecoPoints,
-        avatarUrl: user.avatarUrl
-      }
-    });
+    return res.status(200).json({ success: true, user });
   } catch (error) {
-    console.error('Google Auth Error:', error);
-    res.status(401).json({ success: false, message: 'Invalid Google token' });
+    console.error('Auth me error:', error);
+    return res.status(500).json({ success: false, message: 'Server error' });
   }
 });
-
-// Stubs for future features
-const stub = (routeName) => (req, res) => {
-  res.status(501).json({ success: false, message: `${routeName} not implemented yet.` });
-};
-
-router.post('/refresh', stub('POST /auth/refresh'));
-router.post('/logout', protect, stub('POST /auth/logout'));
 
 module.exports = router;

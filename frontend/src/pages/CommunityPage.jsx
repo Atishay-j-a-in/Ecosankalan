@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import L from 'leaflet';
 import BottomNav from '../components/common/BottomNav';
 import WasteMarkers from '../components/WasteMarkers';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -150,11 +151,10 @@ export default function CommunityPage() {
     }}});
   };
 
-  /* ── Init Leaflet map ──────────────────────────────────────────── */
+  /* ── Init Leaflet map (npm Leaflet — no CDN script needed) ─────── */
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
-    const L = window.L;
     const map = L.map(mapRef.current, {
       center: DEFAULT_CENTER,
       zoom: DEFAULT_ZOOM,
@@ -182,8 +182,7 @@ export default function CommunityPage() {
   /* ── Add/remove markers when data or filter changes ──────────── */
   const syncMarkers = useCallback(() => {
     const map = mapInstanceRef.current;
-    const L   = window.L;
-    if (!map || !L) return;
+    if (!map) return;
 
     markersRef.current.forEach(({ marker }) => {
       if (map.hasLayer(marker)) map.removeLayer(marker);
@@ -264,9 +263,8 @@ export default function CommunityPage() {
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
-        const L   = window.L;
         const map = mapInstanceRef.current;
-        if (!map || !L) { setLocating(false); return; }
+        if (!map) { setLocating(false); return; }
 
         const latlng = [coords.latitude, coords.longitude];
         map.setView(latlng, 14);

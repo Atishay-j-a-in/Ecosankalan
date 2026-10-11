@@ -1,13 +1,17 @@
-process.env.JWT_SECRET = 'test_jwt_secret';
 process.env.NODE_ENV = 'test';
+process.env.APPWRITE_ENDPOINT = 'https://test.cloud.appwrite.io/v1';
+process.env.APPWRITE_PROJECT_ID = 'test-project';
+process.env.APPWRITE_API_KEY = 'test-api-key';
 
 const request = require('supertest');
-const jwt = require('jsonwebtoken');
 const app = require('../src/app');
 const User = require('../src/models/User');
 const Voucher = require('../src/models/Voucher');
 
+jest.mock('node-appwrite');
+
 jest.mock('../src/models/User', () => ({
+  findOne: jest.fn(),
   findById: jest.fn(),
   findByIdAndUpdate: jest.fn(),
 }));
@@ -19,9 +23,12 @@ jest.mock('../src/models/Voucher', () => ({
 
 describe('Vouchers API', () => {
   const userId = '507f1f77bcf86cd799439011';
-  const token = jwt.sign({ userId, role: 'user' }, process.env.JWT_SECRET);
+  const token = 'test-user-token';
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    User.findOne.mockResolvedValue({ _id: userId, role: 'user', email: 'test@example.com' });
+  });
 
   const mockUserQuery = (user) => ({
     select: jest.fn().mockResolvedValue(user),

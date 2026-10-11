@@ -7,7 +7,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "jest --coverage",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "seed:markers": "node scripts/seedMarkers.js"
   },
   "keywords": [
     "waste-management",
@@ -26,12 +27,11 @@
     "express": "^4.19.2",
     "express-rate-limit": "^7.3.1",
     "express-validator": "^7.1.0",
-    "google-auth-library": "^10.9.0",
     "helmet": "^7.1.0",
-    "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.5.1",
     "morgan": "^1.10.0",
     "multer": "^2.1.1",
+    "node-appwrite": "^29.2.0",
     "openai": "^6.42.0",
     "winston": "^3.13.0"
   },

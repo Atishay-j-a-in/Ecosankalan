@@ -1,21 +1,37 @@
-process.env.JWT_SECRET = 'test_jwt_secret';
 process.env.NODE_ENV = 'test';
+process.env.APPWRITE_ENDPOINT = 'https://test.cloud.appwrite.io/v1';
+process.env.APPWRITE_PROJECT_ID = 'test-project';
+process.env.APPWRITE_API_KEY = 'test-api-key';
 process.env.ALLOWED_REDIRECT_DOMAINS = 'greenkart.example';
 
 const request = require('supertest');
-const jwt = require('jsonwebtoken');
 const app = require('../src/app');
 const PartnerProduct = require('../src/models/PartnerProduct');
+const User = require('../src/models/User');
+
+jest.mock('node-appwrite');
 
 jest.mock('../src/models/PartnerProduct', () => ({
   find: jest.fn(),
   findOne: jest.fn(),
 }));
 
-describe('Products API', () => {
-  const token = jwt.sign({ userId: '507f1f77bcf86cd799439011', role: 'user' }, process.env.JWT_SECRET);
+jest.mock('../src/models/User', () => ({
+  findOne: jest.fn(),
+  findById: jest.fn(),
+}));
 
-  beforeEach(() => jest.clearAllMocks());
+describe('Products API', () => {
+  const token = 'test-user-token';
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    User.findOne.mockResolvedValue({
+      _id: '507f1f77bcf86cd799439011',
+      role: 'user',
+      email: 'test@example.com',
+    });
+  });
 
   test('GET products filters active listings by category', async () => {
     PartnerProduct.find.mockReturnValue({

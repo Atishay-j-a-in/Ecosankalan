@@ -56,16 +56,27 @@ const userSchema = new mongoose.Schema(
 
     phone: {
       // DPDP Act 2023: phone is sensitive — used only for OTP, not shared
+      // Optional for Appwrite users (sparse so multiple users without phone coexist).
       type: String,
-      required: [true, 'Phone number is required'],
+      required: false,
       unique: true,
+      sparse: true,
       match: [/^[6-9]\d{9}$/, 'Please enter a valid 10-digit Indian mobile number'],
+    },
+
+    appwriteUserId: {
+      // Link to the Appwrite account ($id). Sparse unique: legacy JWT users have none.
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
     },
 
     password: {
       // bcrypt hash — NEVER the plain text password
+      // Optional for Appwrite-only users (auth lives in Appwrite, not here).
       type: String,
-      required: [true, 'Password is required'],
+      required: false,
       minlength: [8, 'Password must be at least 8 characters'],
       select: false, // IMPORTANT: excluded from all queries by default
                      // Must explicitly use .select('+password') to retrieve it
@@ -176,8 +187,9 @@ userSchema.index({ totalPointsEarned: -1 });
 // This runs automatically every time user.save() is called.
 // 'this' refers to the document being saved.
 userSchema.pre('save', async function (next) {
-  // Only hash if password was actually changed (not on profile updates)
-  if (!this.isModified('password')) return next();
+  // Only hash if password was actually changed (not on profile updates).
+  // Appwrite-only users have no local password — skip hashing then.
+  if (!this.isModified('password') || !this.password) return next();
 
   // bcrypt cost factor 12 = ~300ms hashing time
   // High enough to slow brute-force, low enough to not annoy users
@@ -186,8 +198,9 @@ userSchema.pre('save', async function (next) {
 });
 
 // ── Instance Method: Compare password ────────────────────────────────────────
-// Usage in login controller: const isMatch = await user.comparePassword(enteredPassword)
+// Usage in legacy login path. Appwrite-only users have no hash → always false.
 userSchema.methods.comparePassword = async function (enteredPassword) {
+  if (!this.password || !enteredPassword) return false;
   return bcrypt.compare(enteredPassword, this.password);
 };
 

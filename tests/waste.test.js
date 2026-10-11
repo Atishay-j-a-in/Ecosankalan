@@ -1,11 +1,14 @@
-process.env.JWT_SECRET = 'test_jwt_secret';
 process.env.NODE_ENV = 'test';
+process.env.APPWRITE_ENDPOINT = 'https://test.cloud.appwrite.io/v1';
+process.env.APPWRITE_PROJECT_ID = 'test-project';
+process.env.APPWRITE_API_KEY = 'test-api-key';
 
 const request = require('supertest');
-const jwt = require('jsonwebtoken');
 const app = require('../src/app');
 const WasteLog = require('../src/models/WasteLog');
 const User = require('../src/models/User');
+
+jest.mock('node-appwrite');
 
 jest.mock('../src/models/WasteLog');
 jest.mock('../src/models/User');
@@ -18,10 +21,12 @@ jest.mock('../src/config/cloudinary', () => {
 });
 
 describe('Waste Logging Routes', () => {
-  const token = jwt.sign({ userId: 'user123', role: 'user' }, process.env.JWT_SECRET);
+  const userId = '507f1f77bcf86cd799439011';
+  const token = 'test-user-token';
 
-  afterEach(() => {
+  beforeEach(() => {
     jest.clearAllMocks();
+    User.findOne.mockResolvedValue({ _id: userId, role: 'user', email: 'test@example.com' });
   });
 
   describe('POST /api/v1/waste/log', () => {
@@ -48,7 +53,7 @@ describe('Waste Logging Routes', () => {
       expect(res.body.success).toBe(true);
       expect(res.body.pointsEarned).toBe(10);
       expect(User.findByIdAndUpdate).toHaveBeenCalledWith(
-        'user123',
+        userId,
         expect.objectContaining({
           $inc: expect.objectContaining({
             ecoPoints: 10
@@ -70,7 +75,7 @@ describe('Waste Logging Routes', () => {
       expect(res.body.success).toBe(false);
     });
 
-    it('should return 401 if no JWT token provided', async () => {
+    it('should return 401 if no token provided', async () => {
       const res = await request(app)
         .post('/api/v1/waste/log')
         .send({
@@ -84,8 +89,6 @@ describe('Waste Logging Routes', () => {
 
   describe('GET /api/v1/waste/history', () => {
     it('should return paginated waste history', async () => {
-      // NOTE: the route casts userId to ObjectId, so this needs a valid one.
-      const historyToken = jwt.sign({ userId: '507f1f77bcf86cd799439011', role: 'user' }, process.env.JWT_SECRET);
       WasteLog.find.mockReturnValue({
         sort: jest.fn().mockReturnValue({
           skip: jest.fn().mockReturnValue({
@@ -101,7 +104,7 @@ describe('Waste Logging Routes', () => {
 
       const res = await request(app)
         .get('/api/v1/waste/history')
-        .set('Authorization', `Bearer ${historyToken}`);
+        .set('Authorization', `Bearer ${token}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.logs.length).toBe(1);

@@ -1,0 +1,56 @@
+name: Deploy backend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - "src/**"
+      - "__mocks__/**"
+      - ".github/workflows/backend.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-deployment
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy to EC2 with PM2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy backend
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script_stop: true
+          envs: APP_PATH
+          script: |
+            set -e
+
+            cd "$APP_PATH"
+            git fetch origin main
+            git reset --hard origin/main
+            npm ci --omit=dev
+
+            if ! command -v pm2 >/dev/null 2>&1; then
+              npm install --global pm2
+            fi
+
+            if pm2 describe ecosankalan-backend >/dev/null 2>&1; then
+              pm2 reload ecosankalan-backend --update-env
+            else
+              pm2 start src/server.js --name ecosankalan-backend
+            fi
+
+            pm2 save
+        env:
+          APP_PATH: ${{ secrets.EC2_APP_PATH }}

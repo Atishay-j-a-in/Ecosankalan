@@ -2,8 +2,8 @@
 /* Scanner: docked bottom-right, clear of the 5 tabs (no more center overlap) */
 .fab {
   position: fixed;
-  bottom: 5.5rem;
-  right: 1rem;
+  bottom: 6.25rem;
+  right: 0.5rem;
   z-index: 60;
   border: none;
   cursor: pointer;
@@ -99,8 +99,8 @@
     max-width: 640px;
   }
   .fab {
-    right: max(1.5rem, calc(50% - 320px + 1rem));
-    bottom: 2rem;
+    right: 0.5rem;
+    bottom: 6.25rem;
     width: 64px;
     height: 64px;
   }

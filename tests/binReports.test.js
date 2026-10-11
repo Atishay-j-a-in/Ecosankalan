@@ -1,5 +1,7 @@
-process.env.JWT_SECRET = 'test_jwt_secret';
 process.env.NODE_ENV = 'test';
+process.env.APPWRITE_ENDPOINT = 'https://test.cloud.appwrite.io/v1';
+process.env.APPWRITE_PROJECT_ID = 'test-project';
+process.env.APPWRITE_API_KEY = 'test-api-key';
 // Exercise the Cloudinary branch deterministically: dummy creds flip the
 // hasCloudinary check, while the SDK itself is mocked (no network).
 process.env.CLOUDINARY_CLOUD_NAME = 'test-cloud';
@@ -7,14 +9,21 @@ process.env.CLOUDINARY_API_KEY = 'test-key';
 process.env.CLOUDINARY_API_SECRET = 'test-secret';
 
 const request = require('supertest');
-const jwt = require('jsonwebtoken');
 const app = require('../src/app');
 const Bin = require('../src/models/Bin');
 const BinReport = require('../src/models/BinReport');
+const User = require('../src/models/User');
+
+jest.mock('node-appwrite');
 
 jest.mock('../src/models/Bin', () => ({
   find: jest.fn(),
   create: jest.fn(),
+}));
+
+jest.mock('../src/models/User', () => ({
+  findOne: jest.fn(),
+  findById: jest.fn(),
 }));
 
 jest.mock('../src/models/BinReport', () => ({
@@ -32,10 +41,20 @@ jest.mock('../src/config/cloudinary', () => {
 });
 
 describe('Bin reports API', () => {
-  const userToken = jwt.sign({ userId: '507f1f77bcf86cd799439011', role: 'user' }, process.env.JWT_SECRET);
-  const adminToken = jwt.sign({ userId: '507f1f77bcf86cd799439012', role: 'admin' }, process.env.JWT_SECRET);
+  const userId = '507f1f77bcf86cd799439011';
+  const adminId = '507f1f77bcf86cd799439012';
+  const userToken = 'test-user-token';
+  const adminToken = 'test-admin-token';
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    User.findOne.mockImplementation((query) => {
+      if (query.appwriteUserId === 'appwrite-admin-123' || query.email === 'admin@example.com') {
+        return Promise.resolve({ _id: adminId, role: 'admin', email: 'admin@example.com' });
+      }
+      return Promise.resolve({ _id: userId, role: 'user', email: 'test@example.com' });
+    });
+  });
 
   test('POST /bins/report requires auth', async () => {
     const res = await request(app).post('/api/v1/bins/report').send({});

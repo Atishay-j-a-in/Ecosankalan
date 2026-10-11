@@ -17,7 +17,9 @@ export function StatsProvider({ children }) {
   const [loading, setLoading] = useState(false);
 
   const refresh = useCallback(async () => {
-    if (!localStorage.getItem('token')) return;
+    // Appwrite sessions live in the SDK's storage — gate on the cached
+    // MongoDB profile instead of a legacy localStorage token.
+    if (!localStorage.getItem('user')) return;
     setLoading(true);
     try {
       const results = await Promise.allSettled(RANGES.map((r) => getWasteStats(r)));

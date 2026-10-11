@@ -1,21 +1,31 @@
-process.env.JWT_SECRET = 'test_jwt_secret';
 process.env.NODE_ENV = 'test';
+process.env.APPWRITE_ENDPOINT = 'https://test.cloud.appwrite.io/v1';
+process.env.APPWRITE_PROJECT_ID = 'test-project';
+process.env.APPWRITE_API_KEY = 'test-api-key';
 
 const request = require('supertest');
-const jwt = require('jsonwebtoken');
 const app = require('../src/app');
 const WasteLog = require('../src/models/WasteLog');
+const User = require('../src/models/User');
+
+jest.mock('node-appwrite');
 
 jest.mock('../src/models/WasteLog', () => ({
   aggregate: jest.fn(),
 }));
 
+jest.mock('../src/models/User', () => ({
+  findOne: jest.fn(),
+  findById: jest.fn(),
+}));
+
 describe('GET /api/v1/waste/stats', () => {
   const userId = '507f1f77bcf86cd799439011';
-  const token = jwt.sign({ userId, role: 'user' }, process.env.JWT_SECRET);
+  const token = 'test-user-token';
 
   beforeEach(() => {
     jest.clearAllMocks();
+    User.findOne.mockResolvedValue({ _id: userId, role: 'user', email: 'test@example.com' });
     WasteLog.aggregate
       .mockResolvedValueOnce([{ totalKg: 12.345, totalCo2Saved: 8.333, totalPointsEarned: 340 }])
       .mockResolvedValueOnce([

@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { GoogleOAuthProvider } from '@react-oauth/google';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AppwriteProvider } from '@appwrite.io/react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { StatsProvider } from './context/StatsContext';
 import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
@@ -11,6 +11,8 @@ import LoginPage           from './pages/LoginPage';
 import RegisterPage        from './pages/RegisterPage';
 import OAuthPage           from './pages/OAuthPage';
 import OAuthSuccessPage    from './pages/OAuthSuccessPage';
+import OAuthFailurePage    from './pages/OAuthFailurePage';
+import OTPPage             from './pages/OTPPage';
 import DashboardPage       from './pages/DashboardPage';
 import WasteLogPage        from './pages/WasteLogPage';
 import ShopPage            from './pages/ShopPage';
@@ -39,8 +41,18 @@ const queryClient = new QueryClient({
 
 // ── Protected route: redirects to /login if not authenticated ────────
 const ProtectedRoute = ({ children }) => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  if (isLoading) return null;
   return user ? children : <Navigate to="/login" replace />;
+};
+
+// ── Admin route: requires role admin (backend enforces it too) ────────
+const AdminRoute = ({ children }) => {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== 'admin') return <Navigate to="/dashboard" replace />;
+  return children;
 };
 
 function AppRoutes() {
@@ -53,6 +65,8 @@ function AppRoutes() {
       <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <RegisterPage />} />
       <Route path="/auth"         element={<OAuthPage />} />
       <Route path="/auth/success" element={<OAuthSuccessPage />} />
+      <Route path="/auth/failure" element={<OAuthFailurePage />} />
+      <Route path="/verify-email" element={<OTPPage />} />
       <Route path="/privacy" element={<PrivacyPolicyPage />} />
 
       {/* Public global board — visible to everyone, no login needed */}
@@ -72,7 +86,7 @@ function AppRoutes() {
       <Route path="/product-detail"      element={<ProtectedRoute><ProductDetailPage   /></ProtectedRoute>} />
       <Route path="/vouchers"            element={<ProtectedRoute><VouchersPage         /></ProtectedRoute>} />
       <Route path="/report-bin"          element={<ProtectedRoute><ReportBinPage       /></ProtectedRoute>} />
-      <Route path="/admin"               element={<ProtectedRoute><AdminDashboardPage     /></ProtectedRoute>} />
+      <Route path="/admin"               element={<AdminRoute><AdminDashboardPage     /></AdminRoute>} />
 
       {/* Not yet built — friendly placeholder instead of a dead link */}
       <Route path="/impact"             element={<ProtectedRoute><ComingSoonPage title={t('soon.impactT')} message={t('soon.impactM')} /></ProtectedRoute>} />
@@ -81,7 +95,7 @@ function AppRoutes() {
       <Route path="/quiz-result"        element={<ProtectedRoute><ComingSoonPage title={t('soon.quizResultT')} /></ProtectedRoute>} />
       <Route path="/challenge-progress" element={<ProtectedRoute><ComingSoonPage title={t('soon.challengeT')} message={t('soon.challengeM')} /></ProtectedRoute>} />
       <Route path="/analytics" element={<Navigate to="/impact" replace />} />
-      <Route path="/otp" element={<Navigate to="/login" replace />} />
+      <Route path="/otp" element={<Navigate to="/verify-email" replace />} />
       <Route path="/forgot-password" element={<Navigate to="/login" replace />} />
       <Route path="/verify-phone" element={<Navigate to="/login" replace />} />
       <Route path="/reset-password" element={<Navigate to="/login" replace />} />
@@ -96,8 +110,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || 'dummy-client-id.apps.googleusercontent.com'}>
-        <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <AppwriteProvider
+          endpoint={import.meta.env.VITE_APPWRITE_ENDPOINT}
+          projectId={import.meta.env.VITE_APPWRITE_PROJECT_ID}
+        >
           <LanguageProvider>
             <AuthProvider>
               <StatsProvider>
@@ -107,8 +124,8 @@ export default function App() {
               </StatsProvider>
             </AuthProvider>
           </LanguageProvider>
-        </QueryClientProvider>
-      </GoogleOAuthProvider>
+        </AppwriteProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }

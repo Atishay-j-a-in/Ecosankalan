@@ -1,8 +1,9 @@
-process.env.JWT_SECRET = 'test_jwt_secret';
 process.env.NODE_ENV = 'test';
+process.env.APPWRITE_ENDPOINT = 'https://test.cloud.appwrite.io/v1';
+process.env.APPWRITE_PROJECT_ID = 'test-project';
+process.env.APPWRITE_API_KEY = 'test-api-key';
 
 const request = require('supertest');
-const jwt = require('jsonwebtoken');
 const app = require('../src/app');
 const User = require('../src/models/User');
 const WasteLog = require('../src/models/WasteLog');
@@ -10,8 +11,12 @@ const Event = require('../src/models/Event');
 const ChallengeProgress = require('../src/models/ChallengeProgress');
 const Voucher = require('../src/models/Voucher');
 
+jest.mock('node-appwrite');
+
 jest.mock('../src/models/User', () => ({
   countDocuments: jest.fn(),
+  findOne: jest.fn(),
+  findById: jest.fn(),
 }));
 
 jest.mock('../src/models/WasteLog', () => ({
@@ -32,9 +37,13 @@ jest.mock('../src/models/Voucher', () => ({
 }));
 
 describe('Admin API', () => {
-  const adminToken = jwt.sign({ userId: '507f1f77bcf86cd799439011', role: 'admin' }, process.env.JWT_SECRET);
+  const adminId = '507f1f77bcf86cd799439011';
+  const adminToken = 'test-admin-token';
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    User.findOne.mockResolvedValue({ _id: adminId, role: 'admin', email: 'admin@example.com' });
+  });
 
   test('POST /admin/vouchers bulk inserts and reports duplicates', async () => {
     Voucher.insertMany.mockRejectedValue({

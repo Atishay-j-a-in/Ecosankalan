@@ -1,21 +1,42 @@
-process.env.JWT_SECRET = 'test_jwt_secret';
 process.env.NODE_ENV = 'test';
+process.env.APPWRITE_ENDPOINT = 'https://test.cloud.appwrite.io/v1';
+process.env.APPWRITE_PROJECT_ID = 'test-project';
+process.env.APPWRITE_API_KEY = 'test-api-key';
 
 const request = require('supertest');
-const jwt = require('jsonwebtoken');
 const app = require('../src/app');
 const Bin = require('../src/models/Bin');
+const User = require('../src/models/User');
+
+jest.mock('node-appwrite');
 
 jest.mock('../src/models/Bin', () => ({
   find: jest.fn(),
   create: jest.fn(),
 }));
 
-describe('Bins API', () => {
-  const userToken = jwt.sign({ userId: '507f1f77bcf86cd799439011', role: 'user' }, process.env.JWT_SECRET);
-  const adminToken = jwt.sign({ userId: '507f1f77bcf86cd799439012', role: 'admin' }, process.env.JWT_SECRET);
+jest.mock('../src/models/User', () => ({
+  findOne: jest.fn(),
+  findById: jest.fn(),
+  findByIdAndUpdate: jest.fn(),
+}));
 
-  beforeEach(() => jest.clearAllMocks());
+describe('Bins API', () => {
+  const userId = '507f1f77bcf86cd799439011';
+  const adminId = '507f1f77bcf86cd799439012';
+  const userToken = 'test-user-token';
+  const adminToken = 'test-admin-token';
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // findOne is called by protect's findOrCreateMongoUser — match on appwriteUserId OR email
+    User.findOne.mockImplementation((query) => {
+      if (query.appwriteUserId === 'appwrite-admin-123' || query.email === 'admin@example.com') {
+        return Promise.resolve({ _id: adminId, role: 'admin', email: 'admin@example.com' });
+      }
+      return Promise.resolve({ _id: userId, role: 'user', email: 'test@example.com' });
+    });
+  });
 
   test('POST /bins rejects non-admin', async () => {
     const res = await request(app)
@@ -42,6 +63,12 @@ describe('Bins API', () => {
 
     expect(res.statusCode).toBe(201);
     expect(res.body).toEqual(created);
+  });
+
+  test('GET /bins rejects out-of-range coordinates', async () => {
+    const res = await request(app).get('/api/v1/bins?lat=200&lng=77.03');
+
+    expect(res.statusCode).toBe(400);
   });
 
   test('GET /bins returns nearest-first with distanceMetres', async () => {

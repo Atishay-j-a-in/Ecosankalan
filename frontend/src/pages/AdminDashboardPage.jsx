@@ -5,7 +5,9 @@ import BottomNav from '../components/common/BottomNav';
 import {
   getAdminStats, createBin, createEvent, bulkImportVouchers,
   getBinRequests, approveBinRequest, rejectBinRequest,
+  getAdminChallenges, createChallenge, updateChallenge, deleteChallenge,
 } from '../services/api';
+import MapLocationPicker from '../components/admin/MapLocationPicker';
 import { useLanguage } from '../i18n/LanguageContext';
 
 export default function AdminDashboardPage() {
@@ -26,12 +28,23 @@ export default function AdminDashboardPage() {
   const [reviewingId, setReviewingId] = useState(null);
   const [reviewNote, setReviewNote] = useState('');
 
+  // Challenges state (weekly model: tasks[] + rewards + weekStartDate)
+  const [challenges, setChallenges] = useState([]);
+  const [challengesLoading, setChallengesLoading] = useState(false);
+  const [editingChallenge, setEditingChallenge] = useState(null);
+  const [taskRows, setTaskRows] = useState([{ action: '', targetCount: 1, category: '' }]);
+
+  // Map-picked locations for the bin / event forms (tap the mini map).
+  const [binLoc, setBinLoc] = useState({ lat: '', lng: '' });
+  const [eventLoc, setEventLoc] = useState({ lat: '', lng: '' });
+
   useEffect(() => {
     loadStats();
   }, []);
 
   useEffect(() => {
     if (activeTab === 'requests') loadBinRequests(binStatusFilter);
+    if (activeTab === 'challenges') loadChallenges();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, binStatusFilter]);
 
@@ -56,13 +69,14 @@ export default function AdminDashboardPage() {
         address: fd.get('address'),
         location: {
           type: 'Point',
-          coordinates: [parseFloat(fd.get('lng')), parseFloat(fd.get('lat'))]
+          coordinates: [parseFloat(binLoc.lng), parseFloat(binLoc.lat)]
         },
         types: fd.get('types').split(',').map(s => s.trim()),
         capacityStatus: 'low'
       });
       setSuccessMsg(t('admin.binCreated'));
       e.target.reset();
+      setBinLoc({ lat: '', lng: '' });
     } catch (err) {
       setError(err.message);
     }
@@ -78,7 +92,7 @@ export default function AdminDashboardPage() {
         address: fd.get('address'),
         location: {
           type: 'Point',
-          coordinates: [parseFloat(fd.get('lng')), parseFloat(fd.get('lat'))]
+          coordinates: [parseFloat(eventLoc.lng), parseFloat(eventLoc.lat)]
         },
         eventDate: fd.get('date'),
         organiser: fd.get('organiser'),
@@ -86,9 +100,121 @@ export default function AdminDashboardPage() {
       });
       setSuccessMsg(t('admin.eventCreated'));
       e.target.reset();
+      setEventLoc({ lat: '', lng: '' });
     } catch (err) {
       setError(err.message);
     }
+  };
+
+  // ── Challenges (admin CRUD over the weekly Challenge model) ──
+  const loadChallenges = async () => {
+    setChallengesLoading(true);
+    try {
+      const { data } = await getAdminChallenges();
+      setChallenges(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError(err.message || t('admin.noChallenges'));
+    } finally {
+      setChallengesLoading(false);
+    }
+  };
+
+  const resetChallengeForm = (form) => {
+    if (form) form.reset();
+    setTaskRows([{ action: '', targetCount: 1, category: '' }]);
+  };
+
+  const buildTasks = () =>
+    taskRows
+      .map((r) => ({
+        action: (r.action || '').trim(),
+        targetCount: Number(r.targetCount) || 1,
+        category: (r.category || '').trim() || undefined,
+      }))
+      .filter((r) => r.action);
+
+  const handleCreateChallenge = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const tasks = buildTasks();
+    if (tasks.length === 0) {
+      setError(t('admin.taskRequired'));
+      return;
+    }
+    try {
+      await createChallenge({
+        title: fd.get('title'),
+        description: fd.get('description'),
+        weekStartDate: fd.get('weekStart') || undefined,
+        tasks,
+        rewardPoints: Number(fd.get('rewardPoints')) || 0,
+        rewardVoucherPartner: fd.get('rewardVoucherPartner') || undefined,
+      });
+      setSuccessMsg(t('admin.challengeCreated'));
+      resetChallengeForm(e.target);
+      loadChallenges();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleUpdateChallenge = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const tasks = buildTasks();
+    if (tasks.length === 0) {
+      setError(t('admin.taskRequired'));
+      return;
+    }
+    try {
+      await updateChallenge(editingChallenge._id, {
+        title: fd.get('title'),
+        description: fd.get('description'),
+        weekStartDate: fd.get('weekStart') || undefined,
+        tasks,
+        rewardPoints: Number(fd.get('rewardPoints')) || 0,
+        rewardVoucherPartner: fd.get('rewardVoucherPartner') || undefined,
+      });
+      setSuccessMsg(t('admin.challengeUpdated'));
+      setEditingChallenge(null);
+      resetChallengeForm();
+      loadChallenges();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const startEditChallenge = (ch) => {
+    setEditingChallenge(ch);
+    setTaskRows(
+      (ch.tasks || []).length > 0
+        ? ch.tasks.map((task) => ({
+            action: task.action || '',
+            targetCount: task.targetCount || 1,
+            category: task.category || '',
+          }))
+        : [{ action: '', targetCount: 1, category: '' }]
+    );
+  };
+
+  const cancelEditChallenge = () => {
+    setEditingChallenge(null);
+    resetChallengeForm();
+  };
+
+  const handleDeleteChallenge = async (id) => {
+    if (!window.confirm(t('admin.confirmDeactivate'))) return;
+    try {
+      await deleteChallenge(id);
+      setSuccessMsg(t('admin.challengeDeactivated'));
+      loadChallenges();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const updateTaskRow = (index, field, value) => {
+    setTaskRows((prev) => prev.map((row, i) => (i === index ? { ...row, [field]: value } : row)));
   };
 
   const handleImportVouchers = async (e) => {
@@ -161,7 +287,7 @@ export default function AdminDashboardPage() {
     background: 'var(--surface)', color: 'var(--on-surface)'
   };
 
-  const TABS = ['stats', 'requests', 'bins', 'events', 'vouchers'];
+  const TABS = ['stats', 'requests', 'bins', 'challenges', 'events', 'vouchers'];
 
   return (
     <div style={{ background: 'var(--background)', minHeight: '100vh', paddingBottom: '80px' }}>
@@ -355,15 +481,149 @@ export default function AdminDashboardPage() {
             <form onSubmit={handleCreateBin}>
               <input name="name" placeholder={t('admin.binName')} required style={inputStyle} />
               <input name="address" placeholder={t('admin.address')} required style={inputStyle} />
+              <p style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.4rem' }}>{t('admin.pickOnMap')}</p>
+              <MapLocationPicker
+                lat={binLoc.lat}
+                lng={binLoc.lng}
+                onPick={(la, ln) => setBinLoc({ lat: String(la.toFixed(6)), lng: String(ln.toFixed(6)) })}
+                locateLabel={t('admin.useMyLocation')}
+              />
               <div style={{ display: 'flex', gap: '1rem' }}>
-                <input name="lat" type="number" step="any" placeholder={t('admin.lat')} required style={inputStyle} />
-                <input name="lng" type="number" step="any" placeholder={t('admin.lng')} required style={inputStyle} />
+                <input name="lat" type="number" step="any" placeholder={t('admin.lat')} required style={inputStyle}
+                  value={binLoc.lat} onChange={(e) => setBinLoc((p) => ({ ...p, lat: e.target.value }))} />
+                <input name="lng" type="number" step="any" placeholder={t('admin.lng')} required style={inputStyle}
+                  value={binLoc.lng} onChange={(e) => setBinLoc((p) => ({ ...p, lng: e.target.value }))} />
               </div>
               <input name="types" placeholder={t('admin.typesPh')} required style={inputStyle} />
               <button type="submit" style={{ width: '100%', padding: '0.75rem', background: 'var(--primary)', color: 'var(--on-primary)', border: 'none', borderRadius: '8px' }}>
                 {t('admin.createBin')}
               </button>
             </form>
+          </div>
+        )}
+
+        {activeTab === 'challenges' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={cardStyle}>
+              <h2 style={{ marginBottom: '1rem', fontSize: '1.2rem' }}>
+                {editingChallenge ? t('admin.editChallenge') : t('admin.addChallenge')}
+              </h2>
+              <form onSubmit={editingChallenge ? handleUpdateChallenge : handleCreateChallenge}>
+                <input name="title" placeholder={t('admin.challengeTitle')} defaultValue={editingChallenge?.title || ''} required style={inputStyle} />
+                <textarea name="description" placeholder={t('admin.descPh')} defaultValue={editingChallenge?.description || ''} required style={{ ...inputStyle, height: '80px' }} />
+                <label style={{ fontSize: '0.75rem', color: 'var(--outline)', display: 'block', marginBottom: '0.25rem' }}>{t('admin.weekStart')}</label>
+                <input
+                  name="weekStart"
+                  type="date"
+                  defaultValue={editingChallenge?.weekStartDate ? String(editingChallenge.weekStartDate).slice(0, 10) : ''}
+                  style={inputStyle}
+                />
+
+                <p style={{ fontWeight: 600, marginBottom: '0.5rem', fontSize: '0.9rem' }}>{t('admin.tasks')}</p>
+                {taskRows.map((row, i) => (
+                  <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <input
+                      placeholder={t('admin.taskAction')}
+                      value={row.action}
+                      onChange={(e) => updateTaskRow(i, 'action', e.target.value)}
+                      style={{ ...inputStyle, marginBottom: 0, flex: 2 }}
+                    />
+                    <input
+                      type="number"
+                      placeholder={t('admin.taskTarget')}
+                      value={row.targetCount}
+                      onChange={(e) => updateTaskRow(i, 'targetCount', e.target.value)}
+                      min="1"
+                      style={{ ...inputStyle, marginBottom: 0, flex: 1 }}
+                    />
+                    <input
+                      placeholder={t('admin.taskCategory')}
+                      value={row.category}
+                      onChange={(e) => updateTaskRow(i, 'category', e.target.value)}
+                      style={{ ...inputStyle, marginBottom: 0, flex: 1 }}
+                    />
+                    {taskRows.length > 1 && (
+                      <button
+                        type="button"
+                        aria-label={t('admin.removeTask')}
+                        onClick={() => setTaskRows((prev) => prev.filter((_, j) => j !== i))}
+                        style={{ border: 'none', background: 'none', color: 'var(--error)', cursor: 'pointer' }}
+                      >
+                        <span className="material-symbols-outlined">close</span>
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setTaskRows((prev) => [...prev, { action: '', targetCount: 1, category: '' }])}
+                  style={{ border: 'none', background: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', marginBottom: '1rem' }}
+                >
+                  + {t('admin.addTask')}
+                </button>
+
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--outline)', display: 'block', marginBottom: '0.25rem' }}>{t('admin.rewardPts')}</label>
+                    <input name="rewardPoints" type="number" min="0" defaultValue={editingChallenge?.rewardPoints ?? 0} style={{ ...inputStyle, marginBottom: 0 }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--outline)', display: 'block', marginBottom: '0.25rem' }}>{t('admin.voucherPartner')}</label>
+                    <input name="rewardVoucherPartner" placeholder={t('admin.voucherPartner')} defaultValue={editingChallenge?.rewardVoucherPartner || ''} style={{ ...inputStyle, marginBottom: 0 }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                  <button type="submit" style={{ flex: 1, padding: '0.75rem', background: 'var(--primary)', color: 'var(--on-primary)', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
+                    {editingChallenge ? t('admin.updateChallenge') : t('admin.createChallenge')}
+                  </button>
+                  {editingChallenge && (
+                    <button type="button" onClick={cancelEditChallenge} style={{ padding: '0.75rem', background: 'var(--surface-variant)', color: 'var(--on-surface-variant)', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
+                      {t('admin.cancel')}
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+
+            <div style={cardStyle}>
+              <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>list</span> {t('admin.allChallenges')}
+              </h3>
+
+              {challengesLoading ? (
+                <p><span className="material-symbols-outlined log-spin">progress_activity</span> {t('common.loading')}</p>
+              ) : challenges.length === 0 ? (
+                <p style={{ color: 'var(--outline)' }}>{t('admin.noChallenges')}</p>
+              ) : (
+                challenges.map((ch) => (
+                  <div key={ch._id} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '0.75rem', marginBottom: '0.5rem',
+                    background: ch.isActive ? 'var(--surface-container)' : 'var(--surface-variant)',
+                    borderRadius: '8px', opacity: ch.isActive ? 1 : 0.6,
+                  }}>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontWeight: 600, fontSize: '0.9rem' }}>{ch.title}</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--outline)' }}>
+                        {String(ch.weekStartDate).slice(0, 10)} | {(ch.tasks || []).length} {t('admin.tasks')} | {ch.rewardPoints ?? 0} pts
+                        {!ch.isActive && <span style={{ color: 'var(--error)', marginLeft: '0.5rem' }}>({t('admin.inactive')})</span>}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button onClick={() => startEditChallenge(ch)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }} aria-label={t('admin.editChallenge')}>
+                        <span className="material-symbols-outlined">edit</span>
+                      </button>
+                      {ch.isActive && (
+                        <button onClick={() => handleDeleteChallenge(ch._id)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer' }} aria-label={t('admin.challengeDeactivated')}>
+                          <span className="material-symbols-outlined">delete</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         )}
 
@@ -374,9 +634,18 @@ export default function AdminDashboardPage() {
               <input name="title" placeholder={t('admin.eventTitle')} required style={inputStyle} />
               <textarea name="description" placeholder={t('admin.descPh')} required style={{...inputStyle, height: '80px'}} />
               <input name="address" placeholder={t('admin.address')} required style={inputStyle} />
+              <p style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.4rem' }}>{t('admin.pickOnMap')}</p>
+              <MapLocationPicker
+                lat={eventLoc.lat}
+                lng={eventLoc.lng}
+                onPick={(la, ln) => setEventLoc({ lat: String(la.toFixed(6)), lng: String(ln.toFixed(6)) })}
+                locateLabel={t('admin.useMyLocation')}
+              />
               <div style={{ display: 'flex', gap: '1rem' }}>
-                <input name="lat" type="number" step="any" placeholder={t('admin.lat')} required style={inputStyle} />
-                <input name="lng" type="number" step="any" placeholder={t('admin.lng')} required style={inputStyle} />
+                <input name="lat" type="number" step="any" placeholder={t('admin.lat')} required style={inputStyle}
+                  value={eventLoc.lat} onChange={(e) => setEventLoc((p) => ({ ...p, lat: e.target.value }))} />
+                <input name="lng" type="number" step="any" placeholder={t('admin.lng')} required style={inputStyle}
+                  value={eventLoc.lng} onChange={(e) => setEventLoc((p) => ({ ...p, lng: e.target.value }))} />
               </div>
               <input name="date" type="datetime-local" required style={inputStyle} aria-label={t('admin.date')} />
               <input name="organiser" placeholder={t('admin.organiser')} required style={inputStyle} />
@@ -393,7 +662,7 @@ export default function AdminDashboardPage() {
             <h2 style={{ marginBottom: '1rem', fontSize: '1.2rem' }}>{t('admin.importTitle')}</h2>
             <p style={{ fontSize: '0.875rem', color: 'var(--outline)', marginBottom: '1rem' }}>
               {t('admin.importHelp')} <br/>
-              <code>{`[{"code": "XYZ123", "partnerName": "Amazon", "discountLabel": "10% OFF"}]`}</code>
+              <code>{`[{"code": "XYZ123", "partnerName": "Amazon", "discountDescription": "10% OFF", "partnerPortalUrl": "https://amazon.in", "ecoPointsCost": 500, "expiresAt": "2026-12-31T00:00:00.000Z"}]`}</code>
             </p>
             <form onSubmit={handleImportVouchers}>
               <textarea name="jsonPayload" placeholder={t('admin.jsonPh')} required style={{...inputStyle, height: '150px', fontFamily: 'monospace'}} />

@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import '../../styles/bottomnav.css';
 
@@ -6,13 +7,17 @@ export default function BottomNav() {
   const navigate     = useNavigate();
   const { pathname } = useLocation();
   const { t } = useLanguage();
+  const { adminMode } = useAuth();
 
+  // Admin mode ON (admin users only): the Profile tab becomes the Admin tab.
   const NAV_ITEMS = [
     { label: t('nav.home'),    icon: 'home',         route: '/dashboard' },
     { label: t('nav.map'),     icon: 'map',          route: '/community' },
     { label: t('nav.board'),   icon: 'leaderboard',  route: '/leaderboard' },
     { label: t('nav.shop'),    icon: 'shopping_bag', route: '/shop'      },
-    { label: t('nav.profile'), icon: 'person',       route: '/profile'   },
+    adminMode
+      ? { label: t('nav.admin'),   icon: 'admin_panel_settings', route: '/admin'   }
+      : { label: t('nav.profile'), icon: 'person',               route: '/profile' },
   ];
 
   return (

@@ -2,23 +2,40 @@
  * frontend/src/services/api.js
  * Central Axios instance + all API call functions.
  *
- * All requests are automatically authenticated via the JWT
- * interceptor below — pages just import and call the function,
- * no need to manually attach tokens.
+ * Authentication is handled by Appwrite:
+ *   - On each request, an Appwrite JWT is created via account.createJWT()
+ *   - The JWT is attached as a Bearer token
+ *   - The backend verifies the JWT via node-appwrite
  *
- * Base URL is set by VITE_API_URL env var (defaults to localhost:5000).
+ * Base URL is set by VITE_API_URL env var (defaults to localhost:5000 in dev).
  */
 
 import axios from 'axios';
+import { Account } from 'appwrite';
+import appwriteClient from '../lib/appwrite';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '',
+  baseURL: import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : ''),
+  timeout: 20000,
 });
 
-// ── Auto-attach JWT token to every request ──────────────────────────────────
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+// ── Auto-attach Appwrite JWT to every request ────────────────────────────────
+// Uses the shared Appwrite client from lib/appwrite.js which is configured
+// with the same endpoint/projectId as the AppwriteProvider. Sessions created
+// by useSignIn/useSignUp are stored in localStorage and accessible here.
+api.interceptors.request.use(async (config) => {
+  try {
+    const account = new Account(appwriteClient);
+    const jwtResponse = await account.createJWT();
+    config.headers.Authorization = `Bearer ${jwtResponse.jwt}`;
+  } catch (err) {
+    // Expected when logged out (401 from /sessions/token): the request
+    // simply goes without auth. Warn only for unexpected failures.
+    const status = err?.response?.status ?? err?.code;
+    if (import.meta.env.DEV && status !== 401) {
+      console.warn('[api] createJWT failed:', err?.message || err);
+    }
+  }
   return config;
 });
 
@@ -26,24 +43,50 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Re-throw with a clean error message
+    // Never wrap cancellations — callers detect AbortController/cancel
+    // via err.name / axios.isCancel. Wrapping them breaks that detection
+    // and surfaces phantom "Fetch error: canceled" logs.
+    if (
+      error?.code === 'ERR_CANCELED' ||
+      error?.name === 'CanceledError' ||
+      error?.name === 'AbortError' ||
+      axios.isCancel?.(error)
+    ) {
+      return Promise.reject(error);
+    }
+    const status = error?.response?.status;
+    // Expired/revoked Appwrite JWT: drop cached profile so ProtectedRoute redirects.
+    if (status === 401) {
+      localStorage.removeItem('user');
+    }
+    // Re-throw with a clean error message but keep the status for callers.
     const msg =
       error?.response?.data?.message ||
       error?.message ||
       'Network error. Please check your connection.';
-    return Promise.reject(new Error(msg));
+    const clean = new Error(msg);
+    clean.status = status;
+    clean.data = error?.response?.data;
+    return Promise.reject(clean);
   }
 );
 
 // ════════════════════════════════════════════════════════════════════════════
-// AUTH
+// AUTH — Appwrite integration
 // ════════════════════════════════════════════════════════════════════════════
-export const registerUser  = (data) => api.post('/api/v1/auth/register', data);
-export const verifyOTP     = (data) => api.post('/api/v1/auth/verify-otp', data); // Stub to prevent OTPForm crash
-export const loginUser     = (data) => api.post('/api/v1/auth/login', data);
-export const authGoogle    = (data) => api.post('/api/v1/auth/google', data);
-export const forgotPassword = (data) => api.post('/api/v1/auth/forgot-password', data);
-export const resetPassword  = (data) => api.post('/api/v1/auth/reset-password', data);
+
+/**
+ * POST /auth/sync
+ * Called after Appwrite authentication to sync with MongoDB.
+ * Returns the MongoDB user profile.
+ */
+export const syncUser = () => api.post('/api/v1/auth/sync');
+
+/**
+ * GET /auth/me
+ * Returns the current authenticated user's MongoDB profile.
+ */
+export const getMe = () => api.get('/api/v1/auth/me');
 
 // ════════════════════════════════════════════════════════════════════════════
 // USER PROFILE
@@ -157,6 +200,26 @@ export const updateChallengeProgress = (challengeId, data) =>
  * Returns last 8 weeks of challenge history for the authenticated user
  */
 export const getChallengeHistory = () => api.get('/api/v1/challenges/history');
+
+// ════════════════════════════════════════════════════════════════════════════
+// CHALLENGES — ADMIN (create / edit / deactivate + full list)
+// ════════════════════════════════════════════════════════════════════════════
+
+/** GET /challenges/admin — all challenges, newest week first (admin only) */
+export const getAdminChallenges = () => api.get('/api/v1/challenges/admin');
+
+/**
+ * POST /challenges (admin only)
+ * Body: { title, description, tasks: [{ action, targetCount, category? }],
+ *         rewardPoints?, rewardVoucherPartner?, weekStartDate? }
+ */
+export const createChallenge = (data) => api.post('/api/v1/challenges', data);
+
+/** PUT /challenges/:id (admin only) — partial update */
+export const updateChallenge = (id, data) => api.put(`/api/v1/challenges/${id}`, data);
+
+/** DELETE /challenges/:id (admin only) — soft-deactivates (isActive=false) */
+export const deleteChallenge = (id) => api.delete(`/api/v1/challenges/${id}`);
 
 // ════════════════════════════════════════════════════════════════════════════
 // PRODUCTS / ECO-SHOP  (FR-16, FR-17)

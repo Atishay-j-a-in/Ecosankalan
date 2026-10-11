@@ -4,9 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import '../../styles/navbar.css';
 
 export default function Navbar() {
-  const { user } = useAuth();
+  const { user, adminMode, toggleAdminMode } = useAuth();
   const { lang, setLang, t } = useLanguage();
   const navigate = useNavigate();
+
+  const isAdmin = user?.role === 'admin';
+
+  const handleAdminToggle = () => {
+    const turningOn = !adminMode;
+    toggleAdminMode();
+    navigate(turningOn ? '/admin' : '/dashboard');
+  };
 
   return (
     <header className="navbar">
@@ -18,6 +26,19 @@ export default function Navbar() {
 
       {/* Right side */}
       <div className="navbar-right">
+        {isAdmin && (
+          <button
+            type="button"
+            className={`navbar-admin-toggle${adminMode ? ' active' : ''}`}
+            aria-pressed={adminMode}
+            aria-label={t('nav.admin')}
+            title={t('nav.admin')}
+            onClick={handleAdminToggle}
+          >
+            <span className="material-symbols-outlined">admin_panel_settings</span>
+            <span className="navbar-admin-label">{t('nav.admin')}</span>
+          </button>
+        )}
         <button
           className="navbar-icon-btn"
           aria-label={t('nav.leaderboard')}

@@ -103,17 +103,16 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 // ─────────────────────────────────────────────────
 // 6. RATE LIMITING
 // Prevents brute-force attacks and API abuse.
-// Default: 100 requests per 15 minutes per IP.
-// Auth routes get a stricter limiter (defined in auth routes in Month 2).
+// Default: 60 requests per 1 minute per IP.
 // ─────────────────────────────────────────────────
 const globalLimiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 min
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 60 * 1000, // 1 min
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 60,
   standardHeaders: true,  // include rate limit info in response headers
   legacyHeaders: false,
   message: {
     success: false,
-    message: 'Too many requests. Please try again after 15 minutes.',
+    message: 'Too many requests. Please try again after 1 minute.',
   },
 });
 

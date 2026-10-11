@@ -1,6 +1,10 @@
 /**
  * WasteMarkers.jsx — Renders backend-sourced waste locations on the Leaflet map.
  *
+ * Data source: GET /api/v1/markers?north=&south=&east=&west= (DB bins,
+ * viewport-filtered server-side). DB bin types are mapped onto the
+ * display categories below at normalisation time.
+ *
  * Features:
  *  - Debounced fetch on map pan/zoom (400ms)
  *  - Cancellable in-flight requests (AbortController)
@@ -9,10 +13,15 @@
  *  - Category-based icon markers (trash bin, recycling, etc.)
  *  - Toggleable filters without re-fetching
  *  - Loading indicator
+ *
+ * Ownership: this layer is active ONLY when activeFilter === 'all'.
+ * CommunityPage renders 'nearby' and 'events' itself, so exactly one
+ * marker system is live per filter — no double pins.
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import axios from 'axios';
+import L from 'leaflet';
 import 'leaflet.markercluster';
 import { getMapMarkers } from '../services/api';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -62,7 +71,7 @@ function getMeta(filterKey) {
   return CATEGORY_META[filterKey] || { labelKey: 'mark.other', color: '#546E7A', icon: 'help', bgColor: '#eceff1' };
 }
 
-function createWasteIcon(L, filterKey) {
+function createWasteIcon(filterKey) {
   const meta = getMeta(filterKey);
   const html = `
     <div class="waste-pin" style="--pin-color:${meta.color}">
@@ -114,12 +123,16 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
   const [error, setError]         = useState(null);
   const [chipState, setChipState] = useState(DEFAULT_CATEGORIES);
 
+  // This layer only owns the 'all' filter. CommunityPage renders
+  // 'nearby' and 'events' itself — see the early returns below.
+  const isActive = activeFilter === 'all';
+
   const layerRef           = useRef(null);
   const debounceRef        = useRef(null);
   const clusterEnabled     = useRef(false);
   const categoriesRef      = useRef(DEFAULT_CATEGORIES);
   const locationsRef       = useRef([]);
-  const onMarkerClickRef    = useRef(onMarkerClick);
+  const onMarkerClickRef   = useRef(onMarkerClick);
   const abortControllerRef = useRef(null);
 
   useEffect(() => {
@@ -128,9 +141,7 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
 
   /* ── Render all locations currently visible in viewport ─────── */
   const renderMarkers = useCallback(() => {
-    if (!map || !window.L) return;
-
-    const L = window.L;
+    if (!map) return;
 
     if (!layerRef.current) {
       layerRef.current = L.layerGroup();
@@ -139,7 +150,7 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
 
     layerRef.current.clearLayers();
 
-    if (activeFilter === 'events') {
+    if (!isActive) {
       return;
     }
 
@@ -179,7 +190,7 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
       const filterKey = locationToFilterKey(loc);
       if (!activeKeys.has(filterKey)) continue;
 
-      const icon = createWasteIcon(L, filterKey);
+      const icon = createWasteIcon(filterKey);
       const marker = L.marker([loc.lat, loc.lng], { icon });
       marker.bindPopup(buildPopupHTML(loc, filterKey), { maxWidth: 300 });
       marker.on('click', () => {
@@ -196,11 +207,11 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
       });
       layerRef.current.addLayer(marker);
     }
-  }, [map, activeFilter]);
+  }, [map, isActive]);
 
   /* ── Fetch backend markers — cancellable, results cached in ref ── */
   const fetchData = useCallback(async (bounds) => {
-    if (!bounds || activeFilter === 'events') {
+    if (!bounds || !isActive) {
       setLoading(false);
       return;
     }
@@ -224,26 +235,15 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
 
       if (controller.signal.aborted) return;
 
-      // Backend returns { bins, events }; normalise bins (GeoJSON) into
-      // the { lat, lng, name, category, ... } shape renderMarkers expects.
-      const bins = Array.isArray(data?.bins) ? data.bins : (Array.isArray(data) ? data : []);
-      locationsRef.current = bins
-        .map((b) => {
-          const coords = b?.location?.coordinates;
-          if (!Array.isArray(coords) || coords.length < 2) return null;
-          return {
-            lat: coords[1],
-            lng: coords[0],
-            name: b.name,
-            category: 'Recycling Bin',
-            type: 'Bin',
-            osmId: b._id,
-            tags: {
-              address: b.address || '',
-              types: Array.isArray(b.types) ? b.types.join(', ') : '',
-              status: b.capacityStatus || '',
-            },
-          };
+      // Backend returns { locations } already shaped for renderMarkers
+      // (see GET /api/v1/markers). Guard coords defensively.
+      const incoming = Array.isArray(data?.locations) ? data.locations : [];
+      locationsRef.current = incoming
+        .map((loc) => {
+          const lat = Number(loc?.lat);
+          const lng = Number(loc?.lng);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+          return loc;
         })
         .filter(Boolean);
 
@@ -259,11 +259,11 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
         setLoading(false);
       }
     }
-  }, [renderMarkers, activeFilter]);
+  }, [renderMarkers, isActive, t]);
 
   /* ── Debounced map move handler ────────────────────────────── */
   const onMapMove = useCallback(() => {
-    if (activeFilter === 'events') return;
+    if (!isActive) return;
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
@@ -276,13 +276,13 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
         west: b.getWest(),
       });
     }, 400);
-  }, [map, fetchData, activeFilter]);
+  }, [map, fetchData, isActive]);
 
   /* ── Attach map events — runs ONCE, never re-runs ────────────── */
   useEffect(() => {
     if (!map) return;
 
-    if (activeFilter === 'events') {
+    if (!isActive) {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -309,7 +309,7 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
       if (debounceRef.current) clearTimeout(debounceRef.current);
       if (abortControllerRef.current) abortControllerRef.current.abort();
     };
-  }, [map, activeFilter, onMapMove, fetchData]);
+  }, [map, isActive, onMapMove, fetchData]);
 
   /* ── Filter toggle — updates ref + re-renders markers ──────── */
   const toggleCategory = (key) => {
@@ -324,7 +324,7 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
     renderMarkers();
   }, [chipState, renderMarkers]);
 
-  if (activeFilter === 'events') {
+  if (!isActive) {
     return null;
   }
 
