@@ -103,7 +103,15 @@ export default function DashboardPage() {
     return () => clearInterval(timer);
   }, []);
 
-  const nextFact = () => setFactIndex(i => (i + 1) % FACT_KEYS.length);
+  const prevFact = (e) => {
+    if (e) e.stopPropagation();
+    setFactIndex(i => (i - 1 + FACT_KEYS.length) % FACT_KEYS.length);
+  };
+
+  const nextFact = (e) => {
+    if (e) e.stopPropagation();
+    setFactIndex(i => (i + 1) % FACT_KEYS.length);
+  };
 
   const handleCarouselScroll = () => {
     const el = carouselRef.current;
@@ -127,21 +135,14 @@ export default function DashboardPage() {
   const level     = Math.floor(ecoScore / 20) + 1;
   const dateLocale = lang === 'hi' ? 'hi-IN' : 'en-IN';
 
-  const quickActions = [
-    { icon: 'photo_camera', title: t('home.actScan'),   sub: t('home.actScanSub'),   route: '/waste',       primary: true },
-    { icon: 'add_location', title: t('home.actBin'),    sub: t('home.actBinSub'),    route: '/report-bin',  primary: false },
-    { icon: 'leaderboard',  title: t('home.actBoard'),  sub: t('home.actBoardSub'),  route: '/leaderboard', primary: false },
-    { icon: 'map',          title: t('nav.map'),        sub: t('map.myArea'),        route: '/community',   primary: false },
-  ];
-
   // Use active challenges for the carousel
   const carouselItems = challenges.map((ch, i) => ({
     id: ch._id,
-    tag: t('home.weeklyMission'),
+    tag: t('home.weeklyMission') || 'Weekly Mission',
     title: ch.title,
     desc: ch.description || t('ch.taskDesc', { n: ch.tasks?.length || 0 }),
     progress: ch.userProgress?.percentCompleted || 0,
-    participants: '—',
+    participants: ch.participantsCount ?? '—',
     img: CHALLENGE_BG[i % CHALLENGE_BG.length],
     _raw: ch,
   }));
@@ -155,6 +156,7 @@ export default function DashboardPage() {
     meta: `${log.unit === 'g' ? (log.quantity / 1000).toFixed(2) : log.quantity.toFixed(1)} ${t('waste.kg')} • ${new Date(log.createdAt).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' })}`,
     points: `+${log.pointsEarned} ${t('history.pts')}`,
     pointsType: 'positive',
+    status: log.pointsEarned > 0 ? (t('history.verified') || 'Verified') : (t('history.pending') || 'Pending'),
   }));
 
   return (
@@ -177,85 +179,74 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div className="eco-content">
-                  <h2>{t('home.checkinTitle')}</h2>
+                  <h2>{t('home.checkinTitle') || 'DAILY CHECKIN'}</h2>
                   <h4>{t('home.greeting', { name: userName })}</h4>
                   <p>{t('home.checkinText')}</p>
                   <div className="eco-points">
                     <span className="points-dot">✤</span>
-                    {t('home.checkinPoints')}
+                    {t('home.checkinPoints') || '+10 Eco Points Today'}
                   </div>
                 </div>
-                <button className="eco-badge-close" onClick={handleCloseBadge} aria-label={t('common.dismiss')}>
+                <button className="eco-badge-close" onClick={handleCloseBadge} aria-label={t('common.dismiss') || 'Dismiss badge'}>
                   <span className="material-symbols-outlined">close</span>
                 </button>
               </div>
             </div>
           )}
 
-          {/* ── Immersive hero: greeting + eco score + lifetime stats */}
+          {/* ── Immersive Nature Hero: greeting + eco score + lifetime stats */}
           <section className="hero-immersive">
-            <div className="hero-immersive-bg" />
-            <div className="hero-glass-sun" />
+            <div className="hero-immersive-bg">
+              <div className="hero-glass-sun" />
+            </div>
+
             <div className="hero-immersive-content">
               <div className="hero-immersive-top">
                 <div className="hi-text-content">
-                  <span className="hi-greeting">{t('home.ecoScore')}</span>
-                  <h1 className="hi-title">{t('home.greeting', { name: userName })}</h1>
+                  <div className="hi-greeting">{t('home.welcomeBack') || 'Welcome back'}</div>
+                  <h1 className="hi-title">{userName}</h1>
                   <p className="hi-subtitle">
                     {co2Saved > 0
                       ? t('home.scoreSaved', { kg: co2Saved.toFixed(1) })
                       : t('home.scoreEmpty')}
                   </p>
-                  <span className="hi-level-badge">{t('home.level', { n: level })} • {t('home.levelName')}</span>
+                  <span className="hi-level-badge">{t('home.level', { n: level })} • {t('home.levelName') || 'Eco Warrior'}</span>
                 </div>
-                <div className="hi-score-ring">
+
+                <div className="hi-score-ring" onClick={() => navigate('/leaderboard')}>
                   <span className="hi-score-val">{ecoScore}</span>
-                  <span className="hi-score-lbl">{t('home.ecoScore')}</span>
+                  <span className="hi-score-lbl">{t('home.ecoScore') || 'ECO SCORE'}</span>
                 </div>
               </div>
+
               <div className="hero-immersive-stats">
                 <div className="hi-stat-card">
-                  <span className="material-symbols-outlined hi-stat-icon">savings</span>
+                  <span className="material-symbols-outlined hi-stat-icon" style={{ fontVariationSettings: "'FILL' 1" }}>savings</span>
                   <span className="hi-stat-val">{ecoPoints.toLocaleString('en-IN')}</span>
                   <span className="hi-stat-lbl">{t('home.ecoPoints')}</span>
                 </div>
                 <div className="hi-stat-card">
-                  <span className="material-symbols-outlined hi-stat-icon">delete_sweep</span>
-                  <span className="hi-stat-val">{wasteKg.toFixed(1)}</span>
-                  <span className="hi-stat-lbl">{t('home.wasteLogged')} ({t('waste.kg')})</span>
+                  <span className="material-symbols-outlined hi-stat-icon" style={{ fontVariationSettings: "'FILL' 1" }}>cloud_done</span>
+                  <span className="hi-stat-val">{co2Saved.toFixed(1)} {t('waste.kg')}</span>
+                  <span className="hi-stat-lbl">{t('home.co2Saved')}</span>
                 </div>
                 <div className="hi-stat-card">
-                  <span className="material-symbols-outlined hi-stat-icon">cloud_done</span>
-                  <span className="hi-stat-val">{co2Saved.toFixed(1)}</span>
-                  <span className="hi-stat-lbl">{t('home.co2Saved')} ({t('waste.kg')})</span>
+                  <span className="material-symbols-outlined hi-stat-icon" style={{ fontVariationSettings: "'FILL' 1" }}>delete_sweep</span>
+                  <span className="hi-stat-val">{wasteKg.toFixed(1)} {t('waste.kg')}</span>
+                  <span className="hi-stat-lbl">{t('home.wasteLogged')}</span>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* ── Quick actions (scanner lives here now) */}
-          <section className="qa-section">
-            <h2 className="section-title">{t('home.quickActions')}</h2>
-            <div className="qa-grid">
-              {quickActions.map(a => (
-                <button
-                  key={a.route + a.title}
-                  className={`qa-card${a.primary ? ' primary' : ''}`}
-                  onClick={() => navigate(a.route)}
-                >
-                  <span className="material-symbols-outlined qa-icon">{a.icon}</span>
-                  <span className="qa-title">{a.title}</span>
-                  <span className="qa-sub">{a.sub}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          {/* ── Fact strip */}
+          {/* ── Daily Fact Strip (Dual navigation buttons) */}
           <div className="daily-fact-strip">
+            <button type="button" className="fact-nav-btn" onClick={prevFact} aria-label="Previous fact">
+              <span className="material-symbols-outlined fact-arrow">chevron_left</span>
+            </button>
             <span className="material-symbols-outlined fact-icon">lightbulb</span>
             <p className="fact-text">{t(FACT_KEYS[factIndex])}</p>
-            <button type="button" className="fact-nav-btn" onClick={nextFact} aria-label={t('home.anotherFact')}>
+            <button type="button" className="fact-nav-btn" onClick={nextFact} aria-label={t('home.anotherFact') || 'Next fact'}>
               <span className="material-symbols-outlined fact-arrow">chevron_right</span>
             </button>
           </div>
@@ -268,35 +259,40 @@ export default function DashboardPage() {
                 <button className="view-all-btn" onClick={() => navigate('/waste-history')}>{t('common.viewAll')}</button>
               </div>
               <div className="activity-list">
-                {activityFeed.length === 0 && (
-                  <div className="activity-item" onClick={() => navigate('/waste')} style={{ cursor: 'pointer' }}>
-                    <div className="activity-left">
-                      <div className="activity-icon-wrap">
-                        <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1", color: 'var(--primary)' }}>photo_camera</span>
+                {activityFeed.length > 0 ? (
+                  activityFeed.map(item => (
+                    <div className="activity-item" key={item.id}>
+                      <div className="activity-left">
+                        <div className="activity-icon-wrap">
+                          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1", color: item.iconColor }}>{item.icon}</span>
+                        </div>
+                        <div className="activity-info">
+                          <h4 className="activity-title">{item.title}</h4>
+                          <p className="activity-meta">{item.meta}</p>
+                        </div>
                       </div>
-                      <div className="activity-info">
-                        <h4 className="activity-title">{t('home.actScan')}</h4>
-                        <p className="activity-meta">{t('home.actScanSub')}</p>
+                      <div className="activity-right">
+                        <span className={`activity-points ${item.pointsType === 'negative' ? 'negative' : ''}`}>{item.points}</span>
+                        <span className="activity-status">{item.status}</span>
                       </div>
                     </div>
-                  </div>
-                )}
-                {activityFeed.map(item => (
-                  <div className="activity-item" key={item.id}>
+                  ))
+                ) : (
+                  <div className="activity-item" style={{ cursor: 'default' }}>
                     <div className="activity-left">
                       <div className="activity-icon-wrap">
-                        <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1", color: item.iconColor }}>{item.icon}</span>
+                        <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1", color: 'var(--outline)' }}>eco</span>
                       </div>
                       <div className="activity-info">
-                        <h4 className="activity-title">{item.title}</h4>
-                        <p className="activity-meta">{item.meta}</p>
+                        <h4 className="activity-title">{t('home.noActivityTitle') || 'No activity yet'}</h4>
+                        <p className="activity-meta">{t('home.noActivitySub') || 'Log your first waste entry to get started'}</p>
                       </div>
                     </div>
                     <div className="activity-right">
-                      <span className="activity-points">{item.points}</span>
+                      <button className="view-all-btn" onClick={() => navigate('/waste')}>{t('home.logWaste') || 'Log waste'}</button>
                     </div>
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
@@ -318,6 +314,10 @@ export default function DashboardPage() {
                           <div className="challenge-content">
                             <h3 className="challenge-title">{ch.title}</h3>
                             <p className="challenge-desc">{ch.desc}</p>
+                            <div className="challenge-meta-row">
+                              <span className="material-symbols-outlined challenge-people-icon">group</span>
+                              <span className="challenge-people">{ch.participants} joined</span>
+                            </div>
                             <div className="challenge-progress-bar">
                               <div className="challenge-progress-fill" style={{ width: `${ch.progress}%` }} />
                             </div>
