@@ -1,3 +1,4 @@
+
 name: Deploy backend
 
 on:
@@ -27,18 +28,23 @@ jobs:
     steps:
       - name: Deploy backend
         uses: appleboy/ssh-action@v1.2.2
+        env:
+          APP_PATH: ${{ secrets.EC2_APP_PATH }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          script_stop: true
           envs: APP_PATH
           script: |
-            set -e
+            set -eu
 
             cd "$APP_PATH"
+
+            echo "Pulling latest code..."
             git fetch origin main
             git reset --hard origin/main
+
+            echo "Installing production dependencies..."
             npm ci --omit=dev
 
             if ! command -v pm2 >/dev/null 2>&1; then
@@ -48,9 +54,11 @@ jobs:
             if pm2 describe ecosankalan-backend >/dev/null 2>&1; then
               pm2 reload ecosankalan-backend --update-env
             else
-              pm2 start src/server.js --name ecosankalan-backend
+              pm2 start src/server.js \
+                --name ecosankalan-backend \
+                --update-env
             fi
 
             pm2 save
-        env:
-          APP_PATH: ${{ secrets.EC2_APP_PATH }}
+            pm2 status
+            echo "Deployment completed."
