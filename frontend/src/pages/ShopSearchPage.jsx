@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import Navbar from '../components/common/Navbar';
 import BottomNav from '../components/common/BottomNav';
 import Loader from '../components/common/Loader';
+import { useLanguage } from '../i18n/LanguageContext';
 import { getProducts } from '../services/api';
 import '../styles/shop.css';
 
@@ -30,6 +31,7 @@ const POPULAR_SEARCHES = ['Bamboo', 'Reusable', 'Bottle', 'Compost', 'Zero Waste
 
 export default function ShopSearchPage() {
   const navigate = useNavigate();
+  const { t, lang } = useLanguage();
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
 
@@ -90,7 +92,7 @@ export default function ShopSearchPage() {
               color: 'var(--on-surface)',
               borderRadius: '50%',
             }}
-            aria-label="Back to Shop"
+            aria-label={t('shop.back')}
           >
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
@@ -100,7 +102,7 @@ export default function ShopSearchPage() {
             <input
               ref={inputRef}
               className="shop-search-input"
-              placeholder="Search eco products, categories..."
+              placeholder={t('shop.searchPhLong')}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -120,7 +122,7 @@ export default function ShopSearchPage() {
                   display: 'flex',
                   alignItems: 'center',
                 }}
-                aria-label="Clear search"
+                aria-label={t('shop.clearSearch')}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>close</span>
               </button>
@@ -132,7 +134,7 @@ export default function ShopSearchPage() {
         {query.trim() === '' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--on-surface-variant)' }}>
-              Popular Searches
+              {t('shop.popular')}
             </span>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
               {POPULAR_SEARCHES.map(tag => (
@@ -185,16 +187,16 @@ export default function ShopSearchPage() {
         <section className="shop-section">
           <div className="shop-section-header">
             <h3 className="shop-section-title">
-              {query.trim() ? `Search Results (${filteredProducts.length})` : 'All Products'}
+              {query.trim() ? t('shop.results', { n: filteredProducts.length }) : t('shop.allProducts')}
             </h3>
           </div>
 
           {loading ? (
-            <Loader text="Searching catalog..." />
+            <Loader text={t('shop.searching')} />
           ) : filteredProducts.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--on-surface-variant)' }}>
               <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: 'var(--outline)', marginBottom: '0.5rem' }}>search_off</span>
-              <p style={{ fontSize: '0.9rem' }}>No eco products found matching "{query}"</p>
+              <p style={{ fontSize: '0.9rem' }}>{t('shop.noResults', { q: query })}</p>
             </div>
           ) : (
             <div className="shop-grid">
@@ -211,7 +213,7 @@ export default function ShopSearchPage() {
                     <h4 className="shop-card-name">{product.name}</h4>
                     <div className="shop-card-pts-row">
                       <span className="material-symbols-outlined shop-star-icon" style={{ fontVariationSettings: "'FILL' 1" }}>stars</span>
-                      <span className="shop-card-pts">{product.ecoPointsCost || product.points} pts</span>
+                      <span className="shop-card-pts">{product.ecoPointsCost || product.points} {t('shop.pts')}</span>
                     </div>
                   </div>
                 </div>

@@ -1,0 +1,356 @@
+/* ── Vouchers Page ────────────────────────────────────────────────── */
+.vr-root {
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--on-surface);
+  font-family: var(--font-body);
+  padding-bottom: 8rem;
+}
+
+.vr-main {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Balance card ── */
+.vr-balance-card {
+  position: relative;
+  background: var(--primary);
+  color: var(--on-primary);
+  border-radius: 24px;
+  overflow: hidden;
+  padding: 1.5rem;
+}
+
+.vr-balance-bg-icon {
+  position: absolute;
+  right: -1rem;
+  bottom: -1.5rem;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.vr-balance-bg-icon .material-symbols-outlined {
+  font-size: 9rem !important;
+}
+
+.vr-balance-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.vr-balance-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.8;
+  margin: 0;
+}
+
+.vr-balance-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.vr-balance-num {
+  font-family: var(--font-headline);
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.vr-balance-unit {
+  font-size: 0.95rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.vr-balance-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 0.35rem;
+}
+
+.vr-trend-icon {
+  font-size: 1rem !important;
+}
+
+/* ── Sections ── */
+.vr-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.vr-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.vr-section-title {
+  font-family: var(--font-headline);
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+/* ── Voucher list ── */
+.vr-vouchers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.vr-voucher-card {
+  display: flex;
+  align-items: stretch;
+  background: var(--surface-container-lowest);
+  border: 1px dashed var(--outline-variant);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.vr-voucher-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 1rem;
+  background: var(--primary-fixed);
+  color: var(--on-primary-fixed);
+  min-width: 6.5rem;
+}
+
+.vr-voucher-logo-wrap {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vr-voucher-brand {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.vr-voucher-dash {
+  width: 0;
+  border-left: 2px dashed var(--outline-variant);
+  margin: 0.75rem 0;
+}
+
+.vr-voucher-right {
+  flex: 1;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.vr-voucher-discount {
+  font-size: 0.92rem;
+  font-weight: 800;
+  margin: 0;
+  font-family: var(--font-headline);
+}
+
+.vr-voucher-valid {
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+  margin: 0.15rem 0 0;
+}
+
+.vr-voucher-code-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vr-voucher-code {
+  font-family: monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: var(--surface-container);
+  border-radius: 8px;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+}
+
+.vr-copy-btn {
+  border: none;
+  background: var(--surface-container);
+  color: var(--on-surface-variant);
+  border-radius: 8px;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* ── Rewards ── */
+.vr-reward-chips {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.75rem;
+  scrollbar-width: none;
+}
+
+.vr-reward-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.vr-reward-chip {
+  flex-shrink: 0;
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-container-lowest);
+  color: var(--on-surface-variant);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+.vr-reward-chip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+
+.vr-rewards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.vr-reward-card {
+  background: var(--surface-container-lowest);
+  border: 1px solid rgba(191, 201, 189, 0.3);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.vr-reward-img-wrap {
+  position: relative;
+  height: 9rem;
+  overflow: hidden;
+  background: var(--surface-container);
+}
+
+.vr-reward-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vr-reward-img-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent 60%);
+}
+
+.vr-reward-brand-row {
+  position: absolute;
+  left: 1rem;
+  bottom: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.vr-reward-brand-logo-wrap {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: #fff;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.vr-reward-brand-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vr-reward-brand-name {
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 800;
+  font-family: var(--font-headline);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
+}
+
+.vr-reward-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1rem;
+}
+
+.vr-reward-redeem-label {
+  font-size: 0.72rem;
+  color: var(--on-surface-variant);
+  margin: 0;
+}
+
+.vr-reward-pts {
+  font-family: var(--font-headline);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin: 0.1rem 0 0;
+}
+
+.vr-unlock-btn {
+  border: none;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+  min-width: 6.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vr-unlock-btn:disabled {
+  background: var(--surface-container-high);
+  color: var(--on-surface-variant);
+  cursor: not-allowed;
+}

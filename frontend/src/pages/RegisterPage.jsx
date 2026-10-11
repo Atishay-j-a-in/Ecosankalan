@@ -1,9 +1,11 @@
 import { useNavigate, Link } from 'react-router-dom';
 import RegisterForm from '../components/auth/RegisterForm';
+import { useLanguage } from '../i18n/LanguageContext';
 import '../styles/login.css';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   return (
     <div className="login-root">
@@ -19,16 +21,15 @@ export default function RegisterPage() {
             <span className="brand-name">EcoSankalan</span>
           </div>
           <div className="brand-headline">
-            <h2>Start Your<br />Green Journey.</h2>
+            <h2>{t('auth.heroB')}</h2>
             <p>
-              Join 25,000+ Eco Warriors and make a measurable impact
-              on your community every single day.
+              {t('auth.heroSubB')}
             </p>
           </div>
           <div className="brand-stats">
             <div className="stat-box stat-box--dark">
               <span className="stat-number">21</span>
-              <span className="stat-label">Features Built</span>
+              <span className="stat-label">{t('auth.featStat')}</span>
             </div>
             <div className="stat-box stat-box--chart">
               <div className="mini-chart">
@@ -54,17 +55,17 @@ export default function RegisterPage() {
           </div>
 
           <div className="form-heading">
-            <h3>Create Account</h3>
-            <p>Join the community and start your impact journey today.</p>
+            <h3>{t('auth.createTitle')}</h3>
+            <p>{t('auth.createSub')}</p>
           </div>
 
           <RegisterForm />
 
           <footer className="form-footer">
             <p>
-              Already have an account?{' '}
+              {t('auth.haveAccount')}{' '}
               <Link to="/login" className="create-account-link">
-                Sign in
+                {t('auth.signIn')}
               </Link>
             </p>
           </footer>

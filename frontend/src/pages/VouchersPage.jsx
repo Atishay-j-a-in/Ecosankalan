@@ -3,9 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import BottomNav from '../components/common/BottomNav';
 import { getMyVouchers, unlockVoucher, getProfile } from '../services/api';
+import { useLanguage } from '../i18n/LanguageContext';
 import '../styles/vouchers.css';
 
 const REWARD_CATS = ['All Rewards', 'Shopping', 'Lifestyle', 'Dining'];
+
+const CAT_LABELS = {
+  'All Rewards': 'vr.catAll',
+  'Shopping': 'vr.catShopping',
+  'Lifestyle': 'vr.catLifestyle',
+  'Dining': 'vr.catDining',
+};
 
 // Available partner rewards (seeded in DB — these come from getProducts in production)
 // Shown as "unlock" offers; actual voucher pool lives in admin
@@ -21,12 +29,6 @@ const PARTNER_REWARDS = [
     brandLogo: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBNBBOAgvmskc870s7b-lfvLlv_6N07Tz09sNG5NwoLwKxk-30N9d589Vf_MSYCqWkov-IWUnfFkpegELqNwCKAMSrIqM6tnNDilVYBR2UCqrZsXFqd7LeroTQhJ5QNTgcdkE0Hp0spt0ooBt2NUvlPTRILmGH8ELJbxoE9pZclVsviNe6WMMwWyDxATb3I1ikt4rXeMS-x51_XcJH99qsc8j5sFhrTu9NzypxEr9ABgfNWdml5U_aJZOT0nML36rmDFwuuH1fL94W8' },
 ];
 
-const formatExpiry = (dateStr) => {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  return `Valid until ${d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`;
-};
-
 const maskCode = (code) => {
   if (!code) return '••••••••';
   return code.slice(0, 3) + '•'.repeat(Math.max(0, code.length - 5)) + code.slice(-2);
@@ -34,6 +36,13 @@ const maskCode = (code) => {
 
 export default function VouchersPage() {
   const navigate = useNavigate();
+  const { t, lang } = useLanguage();
+
+  const formatExpiry = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return t('vr.validUntil', { date: d.toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) });
+  };
 
   const [myVouchers,  setMyVouchers]  = useState([]);
   const [ecoPoints,   setEcoPoints]   = useState(0);
@@ -52,7 +61,7 @@ export default function VouchersPage() {
         setMyVouchers(Array.isArray(vRes.data) ? vRes.data : []);
         setEcoPoints(pRes.data?.user?.ecoPoints ?? pRes.data?.ecoPoints ?? 0);
       } catch (err) {
-        setError(err.message || 'Failed to load vouchers');
+        setError(err.message || t('vr.errLoad'));
       } finally {
         setLoading(false);
       }
@@ -64,7 +73,7 @@ export default function VouchersPage() {
 
   const handleUnlock = async (reward) => {
     if (ecoPoints < reward.pts) {
-      setError(`You need ${reward.pts} points to unlock this reward. You have ${ecoPoints}.`);
+      setError(t('vr.errNeed', { p: reward.pts, e: ecoPoints }));
       return;
     }
     setConfirmReward(null);
@@ -75,14 +84,14 @@ export default function VouchersPage() {
       const { data } = await unlockVoucher(reward.brand);
       setMyVouchers(prev => [data, ...prev]);
       setEcoPoints(ep => ep - (data.cost || reward.pts)); // dynamically deduct correct cost
-      setSuccessMsg(`🎉 ${reward.brand} voucher unlocked! Code: ${data.code}`);
+      setSuccessMsg(t('vr.unlocked', { brand: reward.brand, code: data.code }));
     } catch (err) {
       if (err.message?.includes('409') || err.message?.toLowerCase().includes('no voucher')) {
-        setError(`No ${reward.brand} vouchers available right now. Check back soon!`);
+        setError(t('vr.errNone', { brand: reward.brand }));
       } else if (err.message?.toLowerCase().includes('insufficient')) {
-        setError('Insufficient Eco Points to unlock this voucher.');
+        setError(t('vr.errInsufficient'));
       } else {
-        setError(err.message || 'Failed to unlock voucher');
+        setError(err.message || t('vr.errUnlock'));
       }
     } finally {
       setUnlocking(null);
@@ -105,14 +114,14 @@ export default function VouchersPage() {
         <section className="vr-balance-card">
           <div className="vr-balance-bg-icon"><span className="material-symbols-outlined">eco</span></div>
           <div className="vr-balance-inner">
-            <p className="vr-balance-eyebrow">Your Eco Balance</p>
+            <p className="vr-balance-eyebrow">{t('vr.balance')}</p>
             <div className="vr-balance-row">
               <span className="vr-balance-num">{loading ? '—' : ecoPoints.toLocaleString('en-IN')}</span>
-              <span className="vr-balance-unit">Points</span>
+              <span className="vr-balance-unit">{t('vr.points')}</span>
             </div>
             <div className="vr-balance-badge">
               <span className="material-symbols-outlined vr-trend-icon" style={{ fontVariationSettings: "'FILL' 1" }}>eco</span>
-              500 pts needed to unlock a reward
+              {t('vr.need500')}
             </div>
           </div>
         </section>
@@ -122,35 +131,35 @@ export default function VouchersPage() {
           <div className="vr-alert error" role="alert">
             <span className="material-symbols-outlined">error</span>
             {error}
-            <button onClick={() => setError('')} aria-label="Dismiss error"><span className="material-symbols-outlined">close</span></button>
+            <button onClick={() => setError('')} aria-label={t('common.dismiss')}><span className="material-symbols-outlined">close</span></button>
           </div>
         )}
         {successMsg && (
           <div className="vr-alert success" role="status">
             <span className="material-symbols-outlined">check_circle</span>
             {successMsg}
-            <button onClick={() => setSuccessMsg('')} aria-label="Dismiss message"><span className="material-symbols-outlined">close</span></button>
+            <button onClick={() => setSuccessMsg('')} aria-label={t('common.dismiss')}><span className="material-symbols-outlined">close</span></button>
           </div>
         )}
 
         {/* My Vouchers */}
         <section className="vr-section">
           <div className="vr-section-header">
-            <h2 className="vr-section-title">My Vouchers</h2>
-            <span className="vr-badge-count">{activeVouchers.length} active</span>
+            <h2 className="vr-section-title">{t('vr.myVouchers')}</h2>
+            <span className="vr-badge-count">{t('vr.active', { n: activeVouchers.length })}</span>
           </div>
 
           {loading && (
             <div className="vr-loading">
               <span className="material-symbols-outlined" style={{ animation: 'spin 1s linear infinite' }}>progress_activity</span>
-              Loading vouchers…
+              {t('vr.loading')}
             </div>
           )}
 
           {!loading && myVouchers.length === 0 && (
             <div className="vr-empty">
               <span className="material-symbols-outlined vr-empty-icon">confirmation_number</span>
-              <p>No vouchers yet. Unlock one below!</p>
+              <p>{t('vr.empty')}</p>
             </div>
           )}
 
@@ -166,7 +175,7 @@ export default function VouchersPage() {
                 <div className="vr-voucher-dash" />
                 <div className="vr-voucher-right">
                   <div>
-                    <h3 className="vr-voucher-discount">{v.discountLabel || 'Voucher'}</h3>
+                    <h3 className="vr-voucher-discount">{v.discountLabel || t('vr.voucher')}</h3>
                     <p className="vr-voucher-valid">{formatExpiry(v.expiresAt)}</p>
                   </div>
                   <div className="vr-voucher-code-row">
@@ -176,7 +185,7 @@ export default function VouchersPage() {
                     <button className="vr-copy-btn" onClick={() => {
                       if (revealed[v._id]) {
                         navigator.clipboard.writeText(v.code);
-                        setSuccessMsg('Code copied!');
+                        setSuccessMsg(t('vr.copied'));
                       } else {
                         toggleReveal(v._id);
                       }
@@ -192,10 +201,10 @@ export default function VouchersPage() {
 
         {/* Available Rewards */}
         <section className="vr-section">
-          <h2 className="vr-section-title" style={{ marginBottom: '0.75rem' }}>Available Rewards</h2>
+          <h2 className="vr-section-title" style={{ marginBottom: '0.75rem' }}>{t('vr.available')}</h2>
           <div className="vr-reward-chips">
             {REWARD_CATS.map(c => (
-              <button key={c} className={`vr-reward-chip${cat === c ? ' active' : ''}`} onClick={() => setCat(c)}>{c}</button>
+              <button key={c} className={`vr-reward-chip${cat === c ? ' active' : ''}`} onClick={() => setCat(c)}>{t(CAT_LABELS[c])}</button>
             ))}
           </div>
           <div className="vr-rewards-list">
@@ -213,18 +222,18 @@ export default function VouchersPage() {
                 </div>
                 <div className="vr-reward-footer">
                   <div>
-                    <p className="vr-reward-redeem-label">Redeem for</p>
-                    <p className="vr-reward-pts">{r.pts} pts</p>
+                    <p className="vr-reward-redeem-label">{t('vr.redeemFor')}</p>
+                    <p className="vr-reward-pts">{r.pts} {t('vr.pts')}</p>
                   </div>
                   <button
                     className="vr-unlock-btn"
                     disabled={unlocking === r.brand || ecoPoints < r.pts}
                     onClick={() => setConfirmReward(r)}
-                    aria-label={`Unlock ${r.brand} reward for ${r.pts} points`}
+                    aria-label={t('vr.unlockAria', { brand: r.brand, pts: r.pts })}
                   >
                     {unlocking === r.brand ? (
                       <span className="material-symbols-outlined" style={{ animation: 'spin 1s linear infinite' }}>progress_activity</span>
-                    ) : ecoPoints < r.pts ? `Need ${r.pts - ecoPoints} more` : 'Unlock'}
+                    ) : ecoPoints < r.pts ? t('vr.needMore', { n: r.pts - ecoPoints }) : t('vr.unlock')}
                   </button>
                 </div>
               </div>
@@ -237,23 +246,22 @@ export default function VouchersPage() {
 
       {/* Unlock confirmation — points deduction is irreversible */}
       {confirmReward && (
-        <div className="log-modal-overlay" role="dialog" aria-modal="true" aria-label={`Confirm unlocking ${confirmReward.brand} reward`}>
+        <div className="log-modal-overlay" role="dialog" aria-modal="true" aria-label={t('vr.confirmAria', { brand: confirmReward.brand })}>
           <div className="log-modal-backdrop" onClick={() => setConfirmReward(null)} />
           <div className="log-modal-card">
             <div className="log-modal-icon">
               <span className="material-symbols-outlined" style={{ fontSize: '2.5rem' }}>confirmation_number</span>
             </div>
-            <h2 className="log-modal-title">Unlock {confirmReward.brand}?</h2>
+            <h2 className="log-modal-title">{t('vr.confirmTitle', { brand: confirmReward.brand })}</h2>
             <p className="log-modal-sub">
-              This will deduct <strong>{confirmReward.pts} pts</strong> from your balance of{' '}
-              <strong>{ecoPoints.toLocaleString('en-IN')} pts</strong>. This cannot be undone.
+              {t('vr.confirmBody', { pts: confirmReward.pts, bal: ecoPoints.toLocaleString('en-IN') })}
             </p>
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
               <button className="log-modal-close-btn" style={{ background: 'var(--surface-container)', color: 'var(--on-surface)' }} onClick={() => setConfirmReward(null)}>
-                Cancel
+                {t('common.cancel')}
               </button>
               <button className="log-modal-close-btn" onClick={() => handleUnlock(confirmReward)} disabled={unlocking === confirmReward.brand}>
-                {unlocking === confirmReward.brand ? 'Unlocking…' : `Confirm • ${confirmReward.pts} pts`}
+                {unlocking === confirmReward.brand ? t('vr.unlocking') : t('vr.confirmBtn', { pts: confirmReward.pts })}
               </button>
             </div>
           </div>

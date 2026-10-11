@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Navbar from '../components/common/Navbar';
 import BottomNav from '../components/common/BottomNav';
 import { getActiveChallenges } from '../services/api';
+import { useLanguage } from '../i18n/LanguageContext';
 import '../styles/weekly-challenges.css';
 
 const FILTER_TABS = ['All', 'In Progress', 'Not Started', 'Completed'];
@@ -47,16 +48,10 @@ const timeLeft = (deadline) => {
 
 export default function WeeklyChallengesPage() {
   const navigate = useNavigate();
-<<<<<<< HEAD
-  const [tab,        setTab]        = useState('All');
-  const [challenges, setChallenges] = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState('');
-=======
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [tab, setTab] = useState('All');
   const [actionError, setActionError] = useState('');
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
 
   const { data: challenges = [], isLoading: loading, error: queryError } = useQuery({
     queryKey: ['challenges', 'active'],
@@ -69,21 +64,7 @@ export default function WeeklyChallengesPage() {
 
   const error = actionError || (queryError ? (queryError.message || 'Failed to load challenges') : '');
 
-<<<<<<< HEAD
-  const enriched = challenges.map(ch => ({
-=======
-  const handleJoin = async (challengeId) => {
-    try {
-      setActionError('');
-      await joinChallenge(challengeId);
-      queryClient.invalidateQueries({ queryKey: ['challenges', 'active'] });
-    } catch (err) {
-      setActionError(err.message || 'Failed to join challenge');
-    }
-  };
-
   const enriched = challenges.map((ch) => ({
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
     ...ch,
     _status:  deriveStatus(ch),
     _percent: derivePercent(ch),
@@ -97,15 +78,15 @@ export default function WeeklyChallengesPage() {
   const buildNavState = (ch) => ({
     challenge: {
       id: ch._id,
-      tag: 'Weekly Mission',
+      tag: t('home.weeklyMission'),
       title: ch.title,
       subtitle: ch.title,
-      desc: ch.description || '',
+      desc: ch.description || t('ch.taskDesc', { n: ch.tasks?.length || 0 }),
       progress: ch._percent,
       tasksCompleted: (ch.progress?.taskProgress || []).filter(t => t.completed).length,
       tasksTotal: ch.tasks?.length || 0,
       deadline: ch.deadline,
-      reward: { points: ch.rewardPoints || 100, note: `Complete all tasks to earn ${ch.rewardPoints || 100} eco points.` },
+      reward: { points: ch.rewardPoints || 100, note: t('ch.rewardNote', { p: ch.rewardPoints || 100 }) },
       tasks: (ch.tasks || []).map((t, i) => ({
         id: i,
         label: t.label || t.description || `Task ${i + 1}`,
@@ -127,21 +108,21 @@ export default function WeeklyChallengesPage() {
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
           <div>
-            <span className="wc-eyebrow">This Week</span>
-            <h1 className="wc-title">Weekly Challenges</h1>
-            <p className="wc-subtitle">Complete tasks and earn rewards while making a positive impact on the environment.</p>
+            <span className="wc-eyebrow">{t('ch.week')}</span>
+            <h1 className="wc-title">{t('ch.title')}</h1>
+            <p className="wc-subtitle">{t('ch.subtitle')}</p>
           </div>
         </div>
 
         {/* ── Filter tabs */}
         <div className="wc-tabs">
-          {FILTER_TABS.map(t => (
+          {FILTER_TABS.map(tabName => (
             <button
-              key={t}
-              className={`wc-tab${tab === t ? ' active' : ''}`}
-              onClick={() => setTab(t)}
+              key={tabName}
+              className={`wc-tab${tab === tabName ? ' active' : ''}`}
+              onClick={() => setTab(tabName)}
             >
-              {t}
+              {{ All: t('ch.tabAll'), 'In Progress': t('home.inProgress'), 'Not Started': t('home.notStarted'), 'Completed': t('ch.completed') }[tabName]}
             </button>
           ))}
         </div>
@@ -150,7 +131,7 @@ export default function WeeklyChallengesPage() {
         {loading && (
           <div className="wc-empty">
             <span className="material-symbols-outlined wc-empty-icon" style={{ animation: 'spin 1s linear infinite' }}>progress_activity</span>
-            <p>Loading challenges…</p>
+            <p>{t('ch.loading')}</p>
           </div>
         )}
 
@@ -167,7 +148,7 @@ export default function WeeklyChallengesPage() {
           {!loading && visible.length === 0 && (
             <div className="wc-empty">
               <span className="material-symbols-outlined wc-empty-icon">inbox</span>
-              <p>No challenges in this category yet.</p>
+              <p>{t('ch.empty')}</p>
             </div>
           )}
 
@@ -191,29 +172,29 @@ export default function WeeklyChallengesPage() {
                   {ch._timeLeft ? (
                     <div className="wc-badge timer">
                       <span className="material-symbols-outlined wc-badge-icon" style={{ color: 'var(--tertiary)' }}>timer</span>
-                      <span>Ends in: {ch._timeLeft}</span>
+                      <span>{t('ch.endsIn', { t: ch._timeLeft })}</span>
                     </div>
                   ) : ch.rewardPoints ? (
                     <div className="wc-badge bonus">
                       <span className="material-symbols-outlined wc-badge-icon">stars</span>
-                      <span>+{ch.rewardPoints} pts</span>
+                      <span>{t('ch.pts', { p: ch.rewardPoints })}</span>
                     </div>
                   ) : isCompleted ? (
                     <div className="wc-badge done">
                       <span className="material-symbols-outlined wc-badge-icon">check_circle</span>
-                      <span>Reward Unlocked</span>
+                      <span>{t('ch.unlocked')}</span>
                     </div>
                   ) : null}
                 </div>
 
                 <h3 className="wc-card-title">{ch.title}</h3>
-                <p className="wc-card-desc">{ch.description || `Complete ${ch.tasks?.length || 0} tasks this week.`}</p>
+                <p className="wc-card-desc">{ch.description || t('ch.taskDesc', { n: ch.tasks?.length || 0 })}</p>
 
                 {/* Progress bar */}
                 <div className={`wc-progress-wrap${ch._status === 'Not Started' ? ' muted' : ''}`}>
                   <div className="wc-progress-labels">
                     <span className={`wc-progress-status ${ch._status === 'In Progress' ? 'inprogress' : isCompleted ? 'complete' : 'nostart'}`}>
-                      {ch._status}
+                      {{ All: t('ch.tabAll'), 'In Progress': t('home.inProgress'), 'Not Started': t('home.notStarted'), 'Completed': t('ch.completed') }[ch._status] || ch._status}
                     </span>
                     <span className="wc-progress-pct">{ch._percent}%</span>
                   </div>
@@ -224,16 +205,16 @@ export default function WeeklyChallengesPage() {
 
                 {/* CTA */}
                 {isCompleted ? (
-                  <div className="wc-completed-label">Challenge Completed ✓</div>
+                  <div className="wc-completed-label">{t('ch.completedLabel')}</div>
                 ) : ch._status === 'In Progress' ? (
                   <button className="wc-btn continue"
                     onClick={() => navigate('/challenge-progress', { state: buildNavState(ch) })}>
-                    Continue
+                    {t('ch.continue')}
                   </button>
                 ) : (
                   <button className="wc-btn start"
                     onClick={() => navigate('/challenge-progress', { state: buildNavState(ch) })}>
-                    Start
+                    {t('ch.start')}
                   </button>
                 )}
               </article>

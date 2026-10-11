@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import BottomNav from '../components/common/BottomNav';
+import { useLanguage } from '../i18n/LanguageContext';
 import { getWasteHistory } from '../services/api';
 import '../styles/waste-history.css';
 
+// Sent to the API as categoryParam — values stay English, never translated.
 const FILTER_CHIPS = ['All', 'Plastic', 'Organic', 'E-waste', 'Metal', 'Paper', 'Other'];
 
 const ICON_MAP = {
@@ -16,25 +18,26 @@ const ICON_MAP = {
   other:    { icon: 'pending',                 bg: 'var(--surface-dim)',               color: 'var(--on-surface)' },
 };
 
-const formatDate = (isoString) => {
-  const d = new Date(isoString);
-  const now = new Date();
-  const diffDays = Math.floor((now - d) / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays} days ago`;
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-};
-
-const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+const normalizeCat = (s) => (s || '').toLowerCase().replace('-', '');
 
 export default function WasteHistoryPage() {
   const navigate = useNavigate();
+  const { t, lang } = useLanguage();
   const [filter,   setFilter]   = useState('All');
   const [logs,     setLogs]     = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState('');
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
+
+  const formatDate = (isoString) => {
+    const d = new Date(isoString);
+    const now = new Date();
+    const diffDays = Math.floor((now - d) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return t('history.today');
+    if (diffDays === 1) return t('history.yesterday');
+    if (diffDays < 7) return t('history.daysAgo', { n: diffDays });
+    return d.toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
 
   const categoryParam = filter === 'All' ? undefined : filter.toLowerCase().replace('-', '-');
 
@@ -46,7 +49,7 @@ export default function WasteHistoryPage() {
       setLogs(page === 1 ? data.logs : prev => [...prev, ...data.logs]);
       setPagination(data.pagination);
     } catch (err) {
-      setError(err.message || 'Failed to load waste history');
+      setError(err.message || t('history.errLoad'));
     } finally {
       setLoading(false);
     }
@@ -71,12 +74,12 @@ export default function WasteHistoryPage() {
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
           <div>
-            <span className="wh-eyebrow">Activity</span>
-            <h1 className="wh-title">Waste History</h1>
+            <span className="wh-eyebrow">{t('history.eyebrow')}</span>
+            <h1 className="wh-title">{t('history.title')}</h1>
           </div>
           <button className="wh-filter-btn">
             <span className="material-symbols-outlined">tune</span>
-            Filters
+            {t('history.filters')}
           </button>
         </div>
 
@@ -84,15 +87,15 @@ export default function WasteHistoryPage() {
         <div className="wh-summary-row">
           <div className="wh-summary-card">
             <span className="wh-summary-num">{totalKg}</span>
-            <span className="wh-summary-label">Total kg</span>
+            <span className="wh-summary-label">{t('history.totalKg')}</span>
           </div>
           <div className="wh-summary-card">
             <span className="wh-summary-num">{totalPts}</span>
-            <span className="wh-summary-label">Total Points</span>
+            <span className="wh-summary-label">{t('history.totalPoints')}</span>
           </div>
           <div className="wh-summary-card">
             <span className="wh-summary-num">{pagination.total}</span>
-            <span className="wh-summary-label">Logs</span>
+            <span className="wh-summary-label">{t('history.logs')}</span>
           </div>
         </div>
 
@@ -104,7 +107,7 @@ export default function WasteHistoryPage() {
               className={`wh-chip${filter === chip ? ' active' : ''}`}
               onClick={() => setFilter(chip)}
             >
-              {chip}
+              {chip === 'All' ? t('history.all') : t('waste.cat.' + chip.toLowerCase().replace('-', ''))}
             </button>
           ))}
         </div>
@@ -122,14 +125,14 @@ export default function WasteHistoryPage() {
           {loading && logs.length === 0 && (
             <div className="wh-empty">
               <span className="material-symbols-outlined wh-empty-icon" style={{ animation: 'spin 1s linear infinite' }}>progress_activity</span>
-              <p>Loading your history…</p>
+              <p>{t('history.loading')}</p>
             </div>
           )}
 
           {!loading && logs.length === 0 && (
             <div className="wh-empty">
               <span className="material-symbols-outlined wh-empty-icon">inbox</span>
-              <p>No logs for this category yet.</p>
+              <p>{t('history.empty')}</p>
             </div>
           )}
 
@@ -145,7 +148,7 @@ export default function WasteHistoryPage() {
                     </span>
                   </div>
                   <div className="wh-card-info">
-                    <h3 className="wh-card-name">{capitalize(item.category)} Waste</h3>
+                    <h3 className="wh-card-name">{t('waste.cat.' + normalizeCat(item.category))} {t('history.waste')}</h3>
                     <p className="wh-card-date">
                       <span className="material-symbols-outlined wh-date-icon">schedule</span>
                       {formatDate(item.createdAt)}
@@ -153,10 +156,10 @@ export default function WasteHistoryPage() {
                   </div>
                 </div>
                 <div className="wh-card-right">
-                  <div className="wh-card-weight">{qtyKg} kg</div>
+                  <div className="wh-card-weight">{qtyKg} {t('waste.kg')}</div>
                   <div className="wh-card-badges">
-                    <span className="wh-pts-badge">+{item.pointsEarned} Pts</span>
-                    <span className="wh-co2-badge">{item.co2Saved} kg CO₂</span>
+                    <span className="wh-pts-badge">+{item.pointsEarned} {t('history.pts')}</span>
+                    <span className="wh-co2-badge">{item.co2Saved} {t('scan.co2')}</span>
                   </div>
                 </div>
               </div>
@@ -166,7 +169,7 @@ export default function WasteHistoryPage() {
           {/* Load more */}
           {pagination.page < pagination.pages && (
             <button className="wh-load-more" onClick={() => loadHistory(pagination.page + 1)} disabled={loading}>
-              {loading ? 'Loading…' : 'Load More'}
+              {loading ? t('common.loading') : t('history.loadMore')}
             </button>
           )}
         </div>

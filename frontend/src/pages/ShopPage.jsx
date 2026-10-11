@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import Navbar from '../components/common/Navbar';
 import BottomNav from '../components/common/BottomNav';
+import { useLanguage } from '../i18n/LanguageContext';
 import { getProducts, getMyVouchers, getProfile, getProductRedirectUrl } from '../services/api';
 import '../styles/shop.css';
 
@@ -26,14 +27,12 @@ const FILTER_CHIPS = ['All', 'Home', 'Kitchen', 'Reusable', 'Zero Waste', 'Elect
 
 export default function ShopPage() {
   const navigate = useNavigate();
+  const { t, lang } = useLanguage();
 
   const [myVouchers,    setMyVouchers]    = useState([]);
   const [userPoints,    setUserPoints]    = useState(0);
   const [activeChip,    setActiveChip]    = useState('All');
-<<<<<<< HEAD
-=======
   const [searchQuery,   setSearchQuery]   = useState('');
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
   const [revealedCodes, setRevealedCodes] = useState({});
 
   const { data: products = [], isLoading: productsLoading } = useQuery({
@@ -55,19 +54,10 @@ export default function ShopPage() {
           getMyVouchers(),
           getProfile(),
         ]);
-<<<<<<< HEAD
-        setProducts(pRes.data.length > 0 ? pRes.data : FALLBACK_PRODUCTS);
-        setMyVouchers(vRes.data);
-        setUserPoints(uRes.data?.ecoPoints || 0);
-      } catch (err) {
-        // On error, show fallback products
-        setProducts(FALLBACK_PRODUCTS);
-=======
         setMyVouchers(Array.isArray(vRes.data) ? vRes.data : []);
         setUserPoints(uRes.data?.user?.ecoPoints ?? uRes.data?.ecoPoints ?? 0);
       } catch (err) {
         if (import.meta.env.DEV) console.error('[shop] failed to load profile/vouchers:', err?.message || err);
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
       } finally {
         setLoading(false);
       }
@@ -94,17 +84,11 @@ export default function ShopPage() {
     }
   };
 
-<<<<<<< HEAD
-  const filtered = activeChip === 'All'
-    ? products
-    : products.filter(p => (p.category || '').toLowerCase() === activeChip.toLowerCase());
-=======
   const filtered = products.filter(p => {
     const matchesChip = activeChip === 'All' || (p.category || '').toLowerCase() === activeChip.toLowerCase();
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesChip && matchesSearch;
   });
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
 
   const maskCode = (code) => {
     if (!code) return '••••••••';
@@ -114,7 +98,7 @@ export default function ShopPage() {
   const formatExpiry = (dateStr) => {
     if (!dateStr) return '';
     const d = new Date(dateStr);
-    return `Valid until ${d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`;
+    return t('shop.validUntil', { date: d.toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'short' }) });
   };
 
   const activeVouchers = myVouchers.filter(v => !v.expiresAt || new Date(v.expiresAt) > new Date());
@@ -124,12 +108,6 @@ export default function ShopPage() {
       <Navbar />
       <main className="shop-main">
 
-<<<<<<< HEAD
-        {/* Search */}
-        <div className="shop-search-wrap">
-          <span className="material-symbols-outlined shop-search-icon">shopping_bag</span>
-          <input className="shop-search-input" placeholder="Search eco products..." type="text" />
-=======
         {/* Search Input Bar - Navigates to dedicated /shop/search page */}
         <div 
           className="shop-search-wrap" 
@@ -139,20 +117,19 @@ export default function ShopPage() {
           <span className="material-symbols-outlined shop-search-icon">search</span>
           <input 
             className="shop-search-input" 
-            placeholder="Search eco products..." 
+            placeholder={t('shop.searchPh')} 
             type="text" 
             value={searchQuery}
             readOnly
             style={{ cursor: 'pointer' }}
           />
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
         </div>
 
         {/* Hero */}
         <section className="shop-hero">
           <div className="shop-hero-left">
-            <h1 className="shop-hero-title">Curated for the <span className="shop-hero-accent">Conscious</span></h1>
-            <p className="shop-hero-desc">Redeem your hard-earned eco-points for premium sustainable essentials. High impact, zero waste, delivered to your doorstep.</p>
+            <h1 className="shop-hero-title">{t('shop.heroA')} <span className="shop-hero-accent">{t('shop.heroAccent')}</span></h1>
+            <p className="shop-hero-desc">{t('shop.heroDesc')}</p>
           </div>
 
           <div className="shop-balance-card">
@@ -160,7 +137,7 @@ export default function ShopPage() {
               <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>eco</span>
             </div>
             <div>
-              <span className="shop-balance-label">Your Balance</span>
+              <span className="shop-balance-label">{t('shop.balance')}</span>
               <span className="shop-balance-amount">{loading ? '…' : userPoints.toLocaleString('en-IN')} EP</span>
             </div>
           </div>
@@ -170,8 +147,8 @@ export default function ShopPage() {
         {activeVouchers.length > 0 && (
           <section className="shop-section">
             <div className="shop-section-header">
-              <h2 className="shop-section-title">My Vouchers</h2>
-              <button className="shop-view-all" onClick={() => navigate('/vouchers')}>View All</button>
+              <h2 className="shop-section-title">{t('shop.myVouchers')}</h2>
+              <button className="shop-view-all" onClick={() => navigate('/vouchers')}>{t('common.viewAll')}</button>
             </div>
             <div className="shop-vouchers-list">
               {activeVouchers.slice(0, 3).map(v => (
@@ -185,7 +162,7 @@ export default function ShopPage() {
                   <div className="shop-voucher-dash" />
                   <div className="shop-voucher-right">
                     <div>
-                      <h3 className="shop-voucher-discount">{v.discountLabel || 'Voucher'}</h3>
+                      <h3 className="shop-voucher-discount">{v.discountLabel || t('vr.voucher')}</h3>
                       <p className="shop-voucher-valid">{formatExpiry(v.expiresAt)}</p>
                     </div>
                     <div className="shop-voucher-code-row">
@@ -207,14 +184,14 @@ export default function ShopPage() {
         <div className="shop-chips-wrap">
           <div className="shop-chips-scroll">
             {FILTER_CHIPS.map(chip => (
-              <button key={chip} className={`shop-chip${activeChip === chip ? ' active' : ''}`} onClick={() => setActiveChip(chip)}>{chip}</button>
+              <button key={chip} className={`shop-chip${activeChip === chip ? ' active' : ''}`} onClick={() => setActiveChip(chip)}>{chip === 'All' ? t('shop.chipAll') : chip}</button>
             ))}
           </div>
         </div>
 
         {/* Featured Partners */}
         <section className="shop-section">
-          <h3 className="shop-section-title" style={{ marginBottom: '1rem' }}>Featured Partners</h3>
+          <h3 className="shop-section-title" style={{ marginBottom: '1rem' }}>{t('shop.partners')}</h3>
           <div className="shop-partners-scroll">
             {PARTNERS.map(p => (
               <div className="shop-partner-tile" key={p.name}>
@@ -227,24 +204,19 @@ export default function ShopPage() {
         {/* Product Grid */}
         <section className="shop-section">
           <div className="shop-section-header">
-            <h3 className="shop-section-title">Sustainable Picks</h3>
+            <h3 className="shop-section-title">{t('shop.picks')}</h3>
             <button 
               className="shop-view-all" 
               onClick={() => navigate('/shop/search')}
             >
-              See All
+              {t('shop.seeAll')}
             </button>
           </div>
 
-<<<<<<< HEAD
-          {loading ? (
+          {(productsLoading || loading) ? (
             <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.6 }}>
               <span className="material-symbols-outlined" style={{ animation: 'spin 1s linear infinite', fontSize: '2rem' }}>progress_activity</span>
             </div>
-=======
-          {productsLoading ? (
-            <Loader text="Loading catalog..." />
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
           ) : (
             <div className="shop-grid">
               {filtered.map(product => (
@@ -260,10 +232,10 @@ export default function ShopPage() {
                     <h4 className="shop-card-name">{product.name}</h4>
                     <div className="shop-card-pts-row">
                       <span className="material-symbols-outlined shop-star-icon" style={{ fontVariationSettings: "'FILL' 1" }}>stars</span>
-                      <span className="shop-card-pts">{product.ecoPointsCost || product.points} pts</span>
+                      <span className="shop-card-pts">{product.ecoPointsCost || product.points} {t('shop.pts')}</span>
                     </div>
-                    <button className="shop-buy-btn" onClick={e => handleBuyOnPartner(e, product)}>
-                      Buy on Partner
+                      <button className="shop-buy-btn" onClick={e => handleBuyOnPartner(e, product)}>
+                      {t('shop.buyPartner')}
                     </button>
                   </div>
                 </div>

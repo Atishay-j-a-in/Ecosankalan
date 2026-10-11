@@ -1,41 +1,30 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useLanguage } from '../../i18n/LanguageContext';
 import '../../styles/bottomnav.css';
-
-const NAV_ITEMS = [
-  { label: 'Home',    icon: 'home',         route: '/dashboard' },
-  { label: 'Map',     icon: 'map',          route: '/community' },
-  { label: 'Learn',   icon: 'school',       route: '/learn'     },
-  { label: 'Shop',    icon: 'shopping_bag', route: '/shop'      },
-  { label: 'Profile', icon: 'person',       route: '/profile'   },
-];
 
 export default function BottomNav() {
   const navigate     = useNavigate();
   const { pathname } = useLocation();
+  const { t } = useLanguage();
+
+  const NAV_ITEMS = [
+    { label: t('nav.home'),    icon: 'home',         route: '/dashboard' },
+    { label: t('nav.map'),     icon: 'map',          route: '/community' },
+    { label: t('nav.board'),   icon: 'leaderboard',  route: '/leaderboard' },
+    { label: t('nav.shop'),    icon: 'shopping_bag', route: '/shop'      },
+    { label: t('nav.profile'), icon: 'person',       route: '/profile'   },
+  ];
 
   return (
     <>
-      {/* FAB — floating action button for quick AI waste scan */}
+      {/* Scan FAB — docked bottom-right, above the nav */}
       <button
         className="fab"
         onClick={() => navigate('/waste')}
-        aria-label="AI Scan Waste"
-        style={{
-          background: 'var(--primary)',
-          color: 'var(--on-primary)',
-          boxShadow: '0 4px 12px rgba(0, 81, 39, 0.4)',
-          transform: 'translateY(-20px)',
-          width: '64px',
-          height: '64px',
-          borderRadius: '24px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '2px'
-        }}
+        aria-label={t('nav.scan')}
+        title={t('nav.scan')}
       >
-        <span className="material-symbols-outlined" style={{ fontSize: '1.75rem' }}>photo_camera</span>
+        <span className="material-symbols-outlined">photo_camera</span>
       </button>
 
       {/* Bottom nav bar — always visible, full width */}
@@ -45,7 +34,7 @@ export default function BottomNav() {
             const active = pathname === route;
             return (
               <button
-                key={label}
+                key={route}
                 className={`bottom-nav-item${active ? ' active' : ''}`}
                 onClick={() => navigate(route)}
                 aria-label={label}

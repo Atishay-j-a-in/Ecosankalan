@@ -1,0 +1,117 @@
+/* ── Bottom Navigation + Scan FAB ─────────────────────────────────── */
+/* Scanner: docked bottom-right, clear of the 5 tabs (no more center overlap) */
+.fab {
+  position: fixed;
+  bottom: 5.5rem;
+  right: 1rem;
+  z-index: 60;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: 0 6px 20px rgba(0, 81, 39, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.fab:active {
+  transform: scale(0.93);
+}
+
+.fab .material-symbols-outlined {
+  font-size: 1.75rem;
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 55;
+  background: var(--surface-container-lowest);
+  border-top: 1px solid rgba(191, 201, 189, 0.35);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.bottom-nav-inner {
+  max-width: 600px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 0.5rem 0.5rem 0.65rem;
+}
+
+.bottom-nav-item {
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.25rem 0;
+  color: var(--on-surface-variant);
+  font-family: var(--font-body);
+  border-radius: 12px;
+  transition: color 0.2s;
+}
+
+.bottom-nav-item.active {
+  color: var(--primary);
+}
+
+.bottom-nav-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: transparent;
+  transition: background 0.2s;
+}
+
+.bottom-nav-icon-wrap.active {
+  background: var(--primary-fixed);
+  color: var(--on-primary-fixed);
+}
+
+.bottom-nav-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.bottom-nav-item.active .bottom-nav-label {
+  font-weight: 700;
+}
+
+/* ── Desktop: center the shell, keep FAB inside the content column ── */
+@media (min-width: 768px) {
+  .bottom-nav-inner {
+    max-width: 640px;
+  }
+  .fab {
+    right: max(1.5rem, calc(50% - 320px + 1rem));
+    bottom: 2rem;
+    width: 64px;
+    height: 64px;
+  }
+}
+
+/* Small phones: tighter tabs so 5 labels fit */
+@media (max-width: 380px) {
+  .bottom-nav-label {
+    font-size: 0.62rem;
+  }
+  .bottom-nav-icon-wrap {
+    width: 2.75rem;
+  }
+}

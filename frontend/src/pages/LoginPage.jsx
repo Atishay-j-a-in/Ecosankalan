@@ -1,9 +1,11 @@
 import { useNavigate, Link } from 'react-router-dom';
 import LoginForm from '../components/auth/LoginForm';
+import { useLanguage } from '../i18n/LanguageContext';
 import '../styles/login.css';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   return (
     <div className="login-root">
@@ -21,17 +23,16 @@ export default function LoginPage() {
           </div>
 
           <div className="brand-headline">
-            <h2>The Living Archive<br />of Impact.</h2>
+            <h2>{t('auth.heroA')}</h2>
             <p>
-              Join the community of 25,000+ Eco Warriors documenting
-              their journey towards a circular future.
+              {t('auth.heroSubA')}
             </p>
           </div>
 
           <div className="brand-stats">
             <div className="stat-box stat-box--dark">
               <span className="stat-number">1.2k</span>
-              <span className="stat-label">Tons CO₂ Saved</span>
+              <span className="stat-label">{t('auth.co2Stat')}</span>
             </div>
             <div className="stat-box stat-box--chart">
               <div className="mini-chart">
@@ -60,8 +61,8 @@ export default function LoginPage() {
           </div>
 
           <div className="form-heading">
-            <h3>Welcome Back</h3>
-            <p>Please enter your details to continue your impact journey.</p>
+            <h3>{t('auth.welcomeBack')}</h3>
+            <p>{t('auth.welcomeSub')}</p>
           </div>
 
           {/* LoginForm handles all form logic + API call */}
@@ -70,9 +71,9 @@ export default function LoginPage() {
           {/* Footer — "Create an account" is static (Month 1) */}
           <footer className="form-footer">
             <p>
-              Don't have an account?{' '}
+              {t('auth.noAccount')}{' '}
               <Link to="/register" className="create-account-link">
-                Create an account
+                {t('auth.createAccount')}
               </Link>
             </p>
           </footer>

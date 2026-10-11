@@ -76,16 +76,12 @@ export const getWasteHistory = (params = {}) =>
 export const getWasteStats = (range = 'week') =>
   api.get('/api/v1/waste/stats', { params: { range } });
 
-<<<<<<< HEAD
 /**
  * POST /waste/scan  (AI image scan)
  * Body: FormData with key "images" (file upload)
  * Returns: { success, model, usage, parsed: { label, category, material, confidence, steps } }
  */
-export const scanWasteImage = (formData) =>
-=======
 export const scanWasteImage = (formData, config = {}) =>
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
   api.post('/api/v1/waste/scan', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     ...config,
@@ -109,8 +105,6 @@ export const getNearbyBins = ({ lat, lng, radius = 5000 }) =>
 export const createBin = (data) => api.post('/api/v1/bins', data);
 
 // ════════════════════════════════════════════════════════════════════════════
-<<<<<<< HEAD
-=======
 // MAP MARKERS  (from DB — no direct OSM calls)
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -118,7 +112,6 @@ export const getMapMarkers = (bounds, config = {}) =>
   api.get('/api/v1/markers', { params: bounds, ...config });
 
 // ════════════════════════════════════════════════════════════════════════════
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
 // EVENTS  (FR-13, FR-14)
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -235,6 +228,59 @@ export const analyzeWasteAI = (formData) =>
   api.post('/api/v1/ai/analyze', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+
+// ════════════════════════════════════════════════════════════════════════════
+// AVATAR
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * PUT /users/profile/avatar
+ * Body: FormData with key "avatar" (single image)
+ */
+export const uploadAvatar = (formData) =>
+  api.put('/api/v1/users/profile/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
+// ════════════════════════════════════════════════════════════════════════════
+// LEADERBOARD  (public — no login required)
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /leaderboard?limit=
+ * Returns { platform, leaders, features }. Public — no login required
+ * (the auth interceptor only attaches a token when one is stored).
+ */
+export const getLeaderboard = (limit = 20) =>
+  api.get('/api/v1/leaderboard', { params: { limit } });
+
+// ════════════════════════════════════════════════════════════════════════════
+// BIN REPORTS  (citizen reports with mandatory photo + live location)
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * POST /bins/report
+ * Body: FormData { photo (file, required), name, address, types, lat, lng, description }
+ */
+export const reportBin = (formData) =>
+  api.post('/api/v1/bins/report', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
+/** GET /bins/report/mine — my own bin reports */
+export const getMyBinReports = () => api.get('/api/v1/bins/report/mine');
+
+/** GET /bins/requests?status= — admin review queue */
+export const getBinRequests = (status = 'pending') =>
+  api.get('/api/v1/bins/requests', { params: { status } });
+
+/** POST /bins/requests/:id/approve — admin approves (creates the Bin) */
+export const approveBinRequest = (id, note) =>
+  api.post(`/api/v1/bins/requests/${id}/approve`, note ? { note } : {});
+
+/** POST /bins/requests/:id/reject — admin rejects with optional reason */
+export const rejectBinRequest = (id, reason) =>
+  api.post(`/api/v1/bins/requests/${id}/reject`, reason ? { reason } : {});
 
 // Default export for direct api instance usage
 export default api;

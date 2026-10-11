@@ -1,10 +1,9 @@
 /**
- * WasteMarkers.jsx — Renders Overpass-sourced waste locations on the Leaflet map.
+ * WasteMarkers.jsx — Renders backend-sourced waste locations on the Leaflet map.
  *
  * Features:
- *  - Debounced fetch on map pan/zoom (1s)
- *  - Global deduped location store (never re-fetches already-seen points)
- *  - Non-cancelling: in-flight requests always resolve; results cached immediately
+ *  - Debounced fetch on map pan/zoom (400ms)
+ *  - Cancellable in-flight requests (AbortController)
  *  - Cached markers always visible — never cleared mid-fetch
  *  - MarkerCluster when >500 markers
  *  - Category-based icon markers (trash bin, recycling, etc.)
@@ -15,17 +14,16 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import axios from 'axios';
 import 'leaflet.markercluster';
-import { fetchWasteLocations } from '../lib/overpass';
-import { parseOverpassResponse } from '../lib/parser';
-import { locationStore } from '../lib/locationStore';
+import { getMapMarkers } from '../services/api';
+import { useLanguage } from '../i18n/LanguageContext';
 
 /* ── Marker palette: color + Material Symbol icon per category ──── */
 const CATEGORY_META = {
-  waste_basket:           { label: 'Waste Baskets',      color: '#005127', icon: 'delete',           bgColor: '#e8f5e9' },
-  recycling:              { label: 'Recycling Bins',     color: '#1565C0', icon: 'recycling',        bgColor: '#e3f2fd' },
-  recycling_centre:       { label: 'Recycling Centres',  color: '#7B1FA2', icon: 'recycling',        bgColor: '#f3e5f5' },
-  waste_transfer_station: { label: 'Transfer Stations',  color: '#E65100', icon: 'local_shipping',   bgColor: '#fff3e0' },
-  landfill:               { label: 'Landfills',          color: '#B71C1C', icon: 'terrain',          bgColor: '#ffebee' },
+  waste_basket:           { labelKey: 'mark.wasteBaskets',     color: '#005127', icon: 'delete',           bgColor: '#e8f5e9' },
+  recycling:              { labelKey: 'mark.recyclingBins',    color: '#1565C0', icon: 'recycling',        bgColor: '#e3f2fd' },
+  recycling_centre:       { labelKey: 'mark.recyclingCentres', color: '#7B1FA2', icon: 'recycling',        bgColor: '#f3e5f5' },
+  waste_transfer_station: { labelKey: 'mark.transfer',         color: '#E65100', icon: 'local_shipping',   bgColor: '#fff3e0' },
+  landfill:               { labelKey: 'mark.landfills',         color: '#B71C1C', icon: 'terrain',          bgColor: '#ffebee' },
 };
 
 const COLOR_MAP = {
@@ -61,7 +59,7 @@ function locationToFilterKey(loc) {
 }
 
 function getMeta(filterKey) {
-  return CATEGORY_META[filterKey] || { label: 'Other', color: '#546E7A', icon: 'help', bgColor: '#eceff1' };
+  return CATEGORY_META[filterKey] || { labelKey: 'mark.other', color: '#546E7A', icon: 'help', bgColor: '#eceff1' };
 }
 
 function createWasteIcon(L, filterKey) {
@@ -110,28 +108,12 @@ function buildPopupHTML(loc, filterKey) {
   `;
 }
 
-<<<<<<< HEAD
-/* ── Main Component ────────────────────────────────────────────── */
-
-export default function WasteMarkers({ map }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError]       = useState(null);
-  const [retryIn, setRetryIn]   = useState(0);
-  const [zoomMsg, setZoomMsg]   = useState('');
-=======
 export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick }) {
+  const { t } = useLanguage();
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState(null);
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
   const [chipState, setChipState] = useState(DEFAULT_CATEGORIES);
 
-<<<<<<< HEAD
-  const layerRef        = useRef(null);
-  const debounceRef     = useRef(null);
-  const clusterEnabled  = useRef(false);
-  const categoriesRef   = useRef(DEFAULT_CATEGORIES);
-  const inFlightCount   = useRef(0);
-=======
   const layerRef           = useRef(null);
   const debounceRef        = useRef(null);
   const clusterEnabled     = useRef(false);
@@ -143,16 +125,12 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
   useEffect(() => {
     onMarkerClickRef.current = onMarkerClick;
   }, [onMarkerClick]);
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
 
   /* ── Render all locations currently visible in viewport ─────── */
   const renderMarkers = useCallback(() => {
     if (!map || !window.L) return;
 
     const L = window.L;
-<<<<<<< HEAD
-    const b = map.getBounds();
-=======
 
     if (!layerRef.current) {
       layerRef.current = L.layerGroup();
@@ -165,24 +143,11 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
       return;
     }
 
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
     const activeKeys = new Set(
       categoriesRef.current.filter(c => c.active).map(c => c.key)
     );
 
-<<<<<<< HEAD
-    const locations = locationStore.getWithin({
-      south: b.getSouth(), west: b.getWest(),
-      north: b.getNorth(), east: b.getEast(),
-    });
-
-    if (layerRef.current) {
-      layerRef.current.clearLayers();
-    }
-
-=======
     const locations = locationsRef.current;
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
     const useCluster = locations.length > 500;
 
     if (useCluster && !clusterEnabled.current) {
@@ -217,8 +182,6 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
       const icon = createWasteIcon(L, filterKey);
       const marker = L.marker([loc.lat, loc.lng], { icon });
       marker.bindPopup(buildPopupHTML(loc, filterKey), { maxWidth: 300 });
-<<<<<<< HEAD
-=======
       marker.on('click', () => {
         if (onMarkerClickRef.current) {
           onMarkerClickRef.current({
@@ -231,22 +194,11 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
           });
         }
       });
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
       layerRef.current.addLayer(marker);
     }
   }, [map, activeFilter]);
 
-<<<<<<< HEAD
-  /* ── Fetch Overpass data — never cancels, results always cached ── */
-  const fetchData = useCallback(async (bounds, zoom) => {
-    if (zoom != null && zoom < 7) {
-      setZoomMsg('Zoom in to load waste spots for this area');
-      setLoading(false);
-      setError(null);
-      return;
-    }
-    setZoomMsg('');
-=======
+  /* ── Fetch backend markers — cancellable, results cached in ref ── */
   const fetchData = useCallback(async (bounds) => {
     if (!bounds || activeFilter === 'events') {
       setLoading(false);
@@ -258,25 +210,11 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
     }
     const controller = new AbortController();
     abortControllerRef.current = controller;
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
 
-    if (locationStore.hasFetched(bounds)) {
-      renderMarkers();
-      return;
-    }
-
-    inFlightCount.current++;
     setLoading(true);
     setError(null);
 
     try {
-<<<<<<< HEAD
-      const data = await fetchWasteLocations(bounds);
-      const locations = parseOverpassResponse(data);
-
-      locationStore.add(locations);
-      locationStore.markFetched(bounds);
-=======
       const { data } = await getMapMarkers({
         north: bounds.north,
         south: bounds.south,
@@ -285,38 +223,41 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
       }, { signal: controller.signal });
 
       if (controller.signal.aborted) return;
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
+
+      // Backend returns { bins, events }; normalise bins (GeoJSON) into
+      // the { lat, lng, name, category, ... } shape renderMarkers expects.
+      const bins = Array.isArray(data?.bins) ? data.bins : (Array.isArray(data) ? data : []);
+      locationsRef.current = bins
+        .map((b) => {
+          const coords = b?.location?.coordinates;
+          if (!Array.isArray(coords) || coords.length < 2) return null;
+          return {
+            lat: coords[1],
+            lng: coords[0],
+            name: b.name,
+            category: 'Recycling Bin',
+            type: 'Bin',
+            osmId: b._id,
+            tags: {
+              address: b.address || '',
+              types: Array.isArray(b.types) ? b.types.join(', ') : '',
+              status: b.capacityStatus || '',
+            },
+          };
+        })
+        .filter(Boolean);
 
       renderMarkers();
     } catch (err) {
-<<<<<<< HEAD
-      if (err.message.startsWith('Rate limited')) {
-        const match = err.message.match(/(\d+)s/);
-        const seconds = match ? parseInt(match[1], 10) : 10;
-        setRetryIn(seconds);
-        const countdown = setInterval(() => {
-          setRetryIn(prev => {
-            if (prev <= 1) { clearInterval(countdown); return 0; }
-            return prev - 1;
-          });
-        }, 1000);
-      }
-      console.error('Overpass fetch error:', err);
-      setError(err.message);
-    } finally {
-      inFlightCount.current--;
-      if (inFlightCount.current === 0) setLoading(false);
-=======
       if (err.name === 'CanceledError' || err.name === 'AbortError' || axios.isCancel?.(err)) {
         return;
       }
       console.error('[WasteMarkers] Fetch error:', err);
-      setError(err.message || 'Failed to load markers');
+      setError(err.message || t('mark.errFail'));
     } finally {
       if (abortControllerRef.current === controller && !controller.signal.aborted) {
         setLoading(false);
       }
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
     }
   }, [renderMarkers, activeFilter]);
 
@@ -329,13 +270,6 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
       if (!map) return;
       const b = map.getBounds();
       fetchData({
-<<<<<<< HEAD
-        south: b.getSouth(), west: b.getWest(),
-        north: b.getNorth(), east: b.getEast(),
-      }, map.getZoom());
-    }, 1000);
-  }, [map, fetchData]);
-=======
         north: b.getNorth(),
         south: b.getSouth(),
         east: b.getEast(),
@@ -343,7 +277,6 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
       });
     }, 400);
   }, [map, fetchData, activeFilter]);
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
 
   /* ── Attach map events — runs ONCE, never re-runs ────────────── */
   useEffect(() => {
@@ -368,7 +301,7 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
     fetchData({
       south: b.getSouth(), west: b.getWest(),
       north: b.getNorth(), east: b.getEast(),
-    }, map.getZoom());
+    });
 
     return () => {
       map.off('moveend', onMapMove);
@@ -391,14 +324,10 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
     renderMarkers();
   }, [chipState, renderMarkers]);
 
-<<<<<<< HEAD
-  /* ── Render ──────────────────────────────────────────────────── */
-=======
   if (activeFilter === 'events') {
     return null;
   }
 
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
   return (
     <div className="waste-markers-ui">
       <div className="waste-filter-chips">
@@ -416,7 +345,7 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
                 color: cat.active ? '#fff' : meta.color,
                 fontVariationSettings: "'FILL' 1",
               }}>{meta.icon}</span>
-              {meta.label}
+              {t(meta.labelKey)}
             </button>
           );
         })}
@@ -425,57 +354,28 @@ export default function WasteMarkers({ map, activeFilter = 'all', onMarkerClick 
       {loading && (
         <div className="waste-loading-badge">
           <span className="material-symbols-outlined" style={{ fontSize: '1rem', animation: 'spin 1s linear infinite' }}>progress_activity</span>
-          <span>Fetching OSM data...</span>
+          <span>{t('mark.fetching')}</span>
         </div>
       )}
 
-<<<<<<< HEAD
-      {!loading && retryIn > 0 && (
-        <div className="waste-loading-badge" style={{ background: '#fff3e0', color: '#E65100' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>timer</span>
-          <span>Rate limited. Retry in {retryIn}s</span>
-        </div>
-      )}
-
-      {!loading && !retryIn && zoomMsg && (
-        <div className="waste-loading-badge">
-          <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>zoom_in</span>
-          <span>{zoomMsg}</span>
-        </div>
-      )}
-
-      {error && (
-        <div className="waste-error-badge">
-          <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>error</span>
-          <span>Could not load OSM data. Try zooming in or </span>
-          <button className="waste-retry-btn" onClick={() => {
-            if (!map) return;
-            const b = map.getBounds();
-            fetchData({
-              south: b.getSouth(), west: b.getWest(),
-              north: b.getNorth(), east: b.getEast(),
-            });
-          }}>retry</button>
-=======
       {!loading && error && (
         <div className="waste-error-badge" role="alert">
           <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>error</span>
           {/bounding box/i.test(error) ? (
-            <span>Zoom in to load markers.</span>
+            <span>{t('mark.zoomIn')}</span>
           ) : (
             <>
-              <span>Could not load markers. </span>
-              <button type="button" className="waste-retry-btn" aria-label="Retry loading markers" onClick={() => {
+              <span>{t('mark.fail')} </span>
+              <button type="button" className="waste-retry-btn" aria-label={t('mark.retry')} onClick={() => {
                 if (!map) return;
                 const b = map.getBounds();
                 fetchData({
                   north: b.getNorth(), south: b.getSouth(),
                   east: b.getEast(), west: b.getWest(),
                 });
-              }}>retry</button>
+              }}>{t('mark.retry')}</button>
             </>
           )}
->>>>>>> 2285bed (feat(frontend): hazard flag on waste log, voucher unlock confirm, map legend and retry, modal a11y)
         </div>
       )}
     </div>

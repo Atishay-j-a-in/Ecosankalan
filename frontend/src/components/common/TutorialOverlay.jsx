@@ -1,31 +1,33 @@
 import { useState, useEffect } from 'react';
-
-const TUTORIAL_STEPS = [
-  {
-    title: "Welcome to EcoSankalan!",
-    content: "Your journey towards a greener future starts here. Let's take a quick tour of how you can make an impact.",
-    icon: "eco"
-  },
-  {
-    title: "Log Your Waste",
-    content: "Tap the big green Camera icon at the bottom anytime to scan and log your recyclable waste using AI.",
-    icon: "photo_camera"
-  },
-  {
-    title: "Earn & Redeem",
-    content: "Every log earns you EcoPoints. Head over to the Shop to redeem them for exciting vouchers from our partners!",
-    icon: "shopping_bag"
-  },
-  {
-    title: "Join the Community",
-    content: "Check the Map to find nearby bins and RSVP to local cleanup events with fellow eco-warriors.",
-    icon: "map"
-  }
-];
+import { useLanguage } from '../../i18n/LanguageContext';
 
 export default function TutorialOverlay() {
+  const { t } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
   const [step, setStep] = useState(0);
+
+  const TUTORIAL_STEPS = [
+    {
+      title: t('tut.s1t'),
+      content: t('tut.s1c'),
+      icon: "eco"
+    },
+    {
+      title: t('tut.s2t'),
+      content: t('tut.s2c'),
+      icon: "photo_camera"
+    },
+    {
+      title: t('tut.s3t'),
+      content: t('tut.s3c'),
+      icon: "shopping_bag"
+    },
+    {
+      title: t('tut.s4t'),
+      content: t('tut.s4c'),
+      icon: "map"
+    }
+  ];
 
   useEffect(() => {
     // Check if tutorial has been seen on this device
@@ -120,13 +122,13 @@ export default function TutorialOverlay() {
             onClick={handleSkip}
             style={{ flex: 1, padding: '0.875rem', background: 'transparent', color: 'var(--outline)', border: 'none', fontWeight: 'bold' }}
           >
-            Skip
+            {t('tut.skip')}
           </button>
           <button 
             onClick={handleNext}
             style={{ flex: 2, padding: '0.875rem', background: 'var(--primary)', color: 'var(--on-primary)', border: 'none', borderRadius: '12px', fontWeight: 'bold' }}
           >
-            {step === TUTORIAL_STEPS.length - 1 ? "Let's Go!" : "Next"}
+            {step === TUTORIAL_STEPS.length - 1 ? t('tut.go') : t('tut.next')}
           </button>
         </div>
       </div>

@@ -48,7 +48,8 @@ router.post('/unlock', async (req, res) => {
     }
 
     await User.findByIdAndUpdate(req.user.userId, { $inc: { ecoPoints: -cost } });
-    res.status(200).json({ ...voucher.toObject(), cost });
+    const voucherObj = typeof voucher.toObject === 'function' ? voucher.toObject() : { ...voucher };
+    res.status(200).json({ ...voucherObj, cost });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Failed to unlock voucher' });
   }

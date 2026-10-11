@@ -84,6 +84,8 @@ describe('Waste Logging Routes', () => {
 
   describe('GET /api/v1/waste/history', () => {
     it('should return paginated waste history', async () => {
+      // NOTE: the route casts userId to ObjectId, so this needs a valid one.
+      const historyToken = jwt.sign({ userId: '507f1f77bcf86cd799439011', role: 'user' }, process.env.JWT_SECRET);
       WasteLog.find.mockReturnValue({
         sort: jest.fn().mockReturnValue({
           skip: jest.fn().mockReturnValue({
@@ -99,7 +101,7 @@ describe('Waste Logging Routes', () => {
 
       const res = await request(app)
         .get('/api/v1/waste/history')
-        .set('Authorization', `Bearer ${token}`);
+        .set('Authorization', `Bearer ${historyToken}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.logs.length).toBe(1);

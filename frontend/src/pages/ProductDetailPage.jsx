@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import BottomNav from '../components/common/BottomNav';
 import { getProducts, getProductRedirectUrl } from '../services/api';
+import { useLanguage } from '../i18n/LanguageContext';
 import '../styles/product-detail.css';
 
 const DEFAULT = {
@@ -17,6 +18,7 @@ const DEFAULT = {
 
 export default function ProductDetailPage() {
   const navigate = useNavigate();
+  const { t, lang } = useLanguage();
   const location = useLocation();
   const raw = location.state?.product ?? {};
   
@@ -71,13 +73,13 @@ export default function ProductDetailPage() {
         {/* Identity */}
         <section className="pd-identity">
           <h1 className="pd-name">{product.name}</h1>
-          <span className="pd-partner-label">{product.partner} Partner</span>
+          <span className="pd-partner-label">{t('pd.partner', { name: product.partner })}</span>
           <div className="pd-price-row">
             <span className="pd-price">{product.price}</span>
-            <span className="pd-or">or</span>
+            <span className="pd-or">{t('pd.or')}</span>
             <div className="pd-pts-badge">
               <span className="material-symbols-outlined pd-pts-icon" style={{ fontVariationSettings: "'FILL' 1" }}>eco</span>
-              {product.points} Points
+              {product.points} {t('pd.points')}
             </div>
           </div>
         </section>
@@ -87,24 +89,24 @@ export default function ProductDetailPage() {
           <div className="pd-metric-wide">
             <div className="pd-metric-avatar"><span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>person_2</span></div>
             <div>
-              <p className="pd-metric-label">Carbon Saving</p>
+              <p className="pd-metric-label">{t('pd.carbon')}</p>
               <p className="pd-metric-val">{product.co2}</p>
             </div>
           </div>
           <div className="pd-metric-tile tertiary">
             <span className="material-symbols-outlined">potted_plant</span>
-            <p>100% Sustainable Material</p>
+            <p>{t('pd.susMat')}</p>
           </div>
           <div className="pd-metric-tile primary">
             <span className="material-symbols-outlined">fan_indirect</span>
-            <p>Zero Plastic Packaging</p>
+            <p>{t('pd.zeroPlastic')}</p>
           </div>
         </section>
 
         {/* About (expandable) */}
         <section className="pd-about-card">
           <button className="pd-about-toggle" onClick={() => setExpanded(e => !e)}>
-            <span className="pd-about-toggle-title">About the Product</span>
+            <span className="pd-about-toggle-title">{t('pd.about')}</span>
             <span className="material-symbols-outlined pd-chevron" style={{ transform: expanded ? 'rotate(180deg)' : 'none' }}>expand_more</span>
           </button>
           {expanded && (
@@ -123,8 +125,8 @@ export default function ProductDetailPage() {
         {related.length > 0 && (
           <section className="pd-related-section">
             <div className="pd-related-header">
-              <h2 className="pd-related-title">You Might Also Like</h2>
-              <button className="pd-view-all">View All</button>
+              <h2 className="pd-related-title">{t('pd.related')}</h2>
+              <button className="pd-view-all">{t('common.viewAll')}</button>
             </div>
             <div className="pd-related-scroll">
               {related.map((r, i) => (
@@ -141,7 +143,7 @@ export default function ProductDetailPage() {
       </main>
       <footer className="pd-footer">
         <button className="pd-buy-btn" onClick={() => window.open(getProductRedirectUrl(product._id), '_blank', 'noopener,noreferrer')}>
-          Buy on Partner <span className="material-symbols-outlined">arrow_forward</span>
+          {t('pd.buy')} <span className="material-symbols-outlined">arrow_forward</span>
         </button>
       </footer>
       <BottomNav />

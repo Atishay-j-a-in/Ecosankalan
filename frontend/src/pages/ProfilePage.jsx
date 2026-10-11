@@ -1,28 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-<<<<<<< HEAD
-import { useNotifications } from '../context/NotificationContext';
-import { getWasteStats, getWasteHistory, updateProfile } from '../services/api';
-import BottomNav from '../components/common/BottomNav';
-import '../styles/profile.css';
-import '../styles/NotificationDropdown.css';
-=======
-import { getWasteStats, getWasteHistory, updateProfile, uploadAvatar, getProfile } from '../services/api';
+import { getWasteHistory, updateProfile, uploadAvatar, getProfile } from '../services/api';
 import Navbar from '../components/common/Navbar';
 import BottomNav from '../components/common/BottomNav';
 import '../styles/profile.css';
 import { useStats } from '../context/StatsContext';
+import { useLanguage } from '../i18n/LanguageContext';
 
-const formatDisplayName = (name) => {
-  if (!name || typeof name !== 'string') return 'Eco Warrior';
+const formatDisplayName = (name, fallback = 'Eco Warrior') => {
+  if (!name || typeof name !== 'string') return fallback;
   return name
     .trim()
     .split(/\s+/)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
 };
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
 
 const QUIZ_META = {
   'quiz-plastic': { title: 'Plastic Waste',   icon: 'inventory_2',  badge: 'Plastic Expert',     color: '#1b6b3a' },
@@ -37,23 +30,16 @@ function getQuizResults() {
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-<<<<<<< HEAD
-  const { user, logout } = useAuth();
-  const { notifications, markAsRead, markAllAsRead } = useNotifications();
-<<<<<<< HEAD
-=======
-=======
+  const { t } = useLanguage();
   const { user, logout, updateUser } = useAuth();
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
   const { statsData } = useStats();
-  const stats = statsData.all; // All-time stats
->>>>>>> 2285bed (feat(frontend): hazard flag on waste log, voucher unlock confirm, map legend and retry, modal a11y)
+  const stats = statsData?.all ?? null; // All-time stats
   const quizResults = getQuizResults();
   const completedQuizzes = Object.keys(quizResults).length;
   const totalQuizPoints = Object.values(quizResults).reduce((sum, r) => sum + r.score * 10, 0);
 
-  const [stats, setStats] = useState(null);
   const [totalLogs, setTotalLogs] = useState(0);
+  const [editPicFile, setEditPicFile] = useState(null);
 
   // Modals state
   const [activeModal, setActiveModal] = useState(null);
@@ -70,10 +56,8 @@ export default function ProfilePage() {
 
   useEffect(() => {
     Promise.allSettled([
-      getWasteStats('all'),
       getWasteHistory({ limit: 1 })
-    ]).then(([statsRes, histRes]) => {
-      if (statsRes.status === 'fulfilled') setStats(statsRes.value.data);
+    ]).then(([histRes]) => {
       if (histRes.status === 'fulfilled') setTotalLogs(histRes.value.data.pagination.total);
     });
   }, []);
@@ -87,12 +71,6 @@ export default function ProfilePage() {
     if (!editName.trim()) return;
     setIsSaving(true);
     try {
-<<<<<<< HEAD
-      await updateProfile({ name: editName });
-      // In a real app, we'd update AuthContext user object here.
-      // For now, reload the page to refresh the context.
-      window.location.reload();
-=======
       if (editPicFile) {
         const formData = new FormData();
         formData.append('avatar', editPicFile);
@@ -106,9 +84,8 @@ export default function ProfilePage() {
         if (freshProfile?.data) updateUser(freshProfile.data);
       }
       setActiveModal(null);
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
     } catch (err) {
-      alert(err.message || 'Failed to update profile');
+      alert(err.message || t('profile.errSave'));
     } finally {
       setIsSaving(false);
     }
@@ -136,7 +113,7 @@ export default function ProfilePage() {
 
   const topCategoryName = topCategories.length > 0 
     ? topCategories[0][0].charAt(0).toUpperCase() + topCategories[0][0].slice(1)
-    : 'None';
+    : t('profile.none');
   const topCategoryPct = topCategories.length > 0 ? slices[0].pct : 0;
 
   // Build achievements: static ones + quiz badges
@@ -146,20 +123,17 @@ export default function ProfilePage() {
   const isSoilMaster = organicKg >= 50;
 
   const ACHIEVEMENTS = [
-    { icon: 'verified',       bg: isFirstLog ? 'bg-secondary-fixed' : 'bg-surface-container',   fill: isFirstLog,  title: 'First Log',    sub: isFirstLog ? 'Started the journey' : 'Locked: Log any waste',     locked: !isFirstLog },
-    { icon: 'fitness_center', bg: is10Kg ? 'bg-primary-fixed' : 'bg-surface-container',         fill: is10Kg,      title: '10kg Club',    sub: is10Kg ? 'Significant impact' : 'Locked: Recycle 10kg total',       locked: !is10Kg },
-    { icon: 'compost',        bg: isSoilMaster ? 'bg-secondary-fixed' : 'bg-surface-container', fill: isSoilMaster, title: 'Soil Master',  sub: isSoilMaster ? 'Master of compost' : `Locked: ${Math.round(50 - organicKg)}kg organic needed`,  locked: !isSoilMaster  },
-    { icon: 'communities',    bg: 'bg-surface-container',                                       fill: false,       title: 'Ambassador',   sub: 'Locked: Invite 5 friends', locked: true  },
+    { icon: 'verified',       bg: isFirstLog ? 'bg-secondary-fixed' : 'bg-surface-container',   fill: isFirstLog,  title: t('profile.ach.first'), sub: isFirstLog ? t('profile.ach.firstSub') : t('profile.ach.firstLocked'),     locked: !isFirstLog },
+    { icon: 'fitness_center', bg: is10Kg ? 'bg-primary-fixed' : 'bg-surface-container',         fill: is10Kg,      title: t('profile.ach.club'), sub: is10Kg ? t('profile.ach.clubSub') : t('profile.ach.clubLocked'),       locked: !is10Kg },
+    { icon: 'compost',        bg: isSoilMaster ? 'bg-secondary-fixed' : 'bg-surface-container', fill: isSoilMaster, title: t('profile.ach.soil'), sub: isSoilMaster ? t('profile.ach.soilSub') : t('profile.ach.soilNeed', { n: Math.round(50 - organicKg) }),  locked: !isSoilMaster  },
+    { icon: 'communities',    bg: 'bg-surface-container',                                       fill: false,       title: t('profile.ach.amb'), sub: t('profile.ach.ambSub'), locked: true  },
   ];
 
   const SETTINGS = [
-<<<<<<< HEAD
-    { icon: 'person_edit',          label: 'Edit Profile',  action: () => setActiveModal('edit') },
-    { icon: 'notifications_active', label: 'Notifications', action: () => setActiveModal('notifications') },
-=======
-    ...(user?.role === 'admin' ? [{ icon: 'admin_panel_settings', label: 'Admin Dashboard', action: () => navigate('/admin') }] : []),
->>>>>>> 069e093 (fix: address frontend issues reported by testers)
-    { icon: 'lock',                 label: 'Privacy',       action: () => setActiveModal('privacy') },
+    ...(user?.role === 'admin' ? [{ icon: 'admin_panel_settings', label: t('profile.admin'), action: () => navigate('/admin') }] : []),
+    { icon: 'person_edit',          label: t('profile.edit'),  action: () => setActiveModal('edit') },
+    { icon: 'notifications_active', label: t('profile.notifs'), action: () => setActiveModal('notifications') },
+    { icon: 'lock',                 label: t('profile.privacy'),       action: () => setActiveModal('privacy') },
   ];
 
   return (
@@ -194,7 +168,7 @@ export default function ProfilePage() {
             </div>
             <div className="profile-hero-info">
               <div className="profile-hero-name-row">
-                <h2 className="profile-hero-name">{formatDisplayName(user?.name)}</h2>
+                <h2 className="profile-hero-name">{formatDisplayName(user?.name, t('home.defaultName'))}</h2>
               </div>
               <div className="profile-hero-location">
                 <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>email</span>
@@ -204,7 +178,7 @@ export default function ProfilePage() {
             </div>
             <button className="profile-edit-btn" onClick={() => setActiveModal('edit')}>
               <span className="material-symbols-outlined" style={{ fontSize: '0.875rem' }}>edit</span>
-              Edit Profile
+              {t('profile.edit')}
             </button>
           </div>
         </section>
@@ -214,23 +188,23 @@ export default function ProfilePage() {
           <div className="profile-stats-grid">
             <div className="profile-stat-card white">
               <span className="material-symbols-outlined profile-stat-icon primary">analytics</span>
-              <div><p className="profile-stat-label">Total Logs</p><h3 className="profile-stat-val">{totalLogs.toLocaleString()}</h3></div>
+              <div><p className="profile-stat-label">{t('profile.totalLogs')}</p><h3 className="profile-stat-val">{totalLogs.toLocaleString()}</h3></div>
             </div>
             <div className="profile-stat-card green">
               <span className="material-symbols-outlined profile-stat-icon">eco</span>
-              <div><p className="profile-stat-label muted">CO₂ Saved</p><h3 className="profile-stat-val">{stats?.totalCo2Saved || 0} kg</h3></div>
+              <div><p className="profile-stat-label muted">{t('profile.co2')}</p><h3 className="profile-stat-val">{stats?.totalCo2Saved || 0} kg</h3></div>
             </div>
             <div className="profile-stat-card white">
               <span className="material-symbols-outlined profile-stat-icon secondary">toll</span>
-              <div><p className="profile-stat-label">Points</p><h3 className="profile-stat-val">{(user?.ecoPoints || 0).toLocaleString()}</h3></div>
+              <div><p className="profile-stat-label">{t('profile.points')}</p><h3 className="profile-stat-val">{(user?.ecoPoints || 0).toLocaleString()}</h3></div>
             </div>
             <div className="profile-stat-card red">
               <span className="material-symbols-outlined profile-stat-icon">quiz</span>
-              <div><p className="profile-stat-label muted">Quizzes Done</p><h3 className="profile-stat-val">{completedQuizzes}/4</h3></div>
+              <div><p className="profile-stat-label muted">{t('profile.quizzes')}</p><h3 className="profile-stat-val">{t('profile.quizCount', { a: completedQuizzes })}</h3></div>
             </div>
           </div>
           <div className="profile-donut-card">
-            <h4 className="profile-donut-title">Waste Breakdown</h4>
+            <h4 className="profile-donut-title">{t('profile.breakdown')}</h4>
             <div className="profile-donut-wrap">
               <svg className="profile-donut-svg" viewBox="0 0 36 36">
                 <circle cx="18" cy="18" fill="transparent" r="15.915" stroke="#eceeec" strokeWidth="4" />
@@ -258,7 +232,7 @@ export default function ProfilePage() {
                 </div>
               )) : (
                 <div className="profile-legend-item">
-                  <span style={{ color: 'var(--outline)' }}>No waste logged yet</span>
+                  <span style={{ color: 'var(--outline)' }}>{t('profile.noWaste')}</span>
                 </div>
               )}
             </div>
@@ -268,8 +242,8 @@ export default function ProfilePage() {
         {/* ── Quiz Progress Section ── */}
         <section className="profile-section">
           <div className="profile-section-header-row">
-            <h4 className="profile-section-title">Quiz Progress</h4>
-            <button className="profile-quiz-all-btn" onClick={() => navigate('/quiz')}>Take Quiz</button>
+            <h4 className="profile-section-title">{t('profile.quizProgress')}</h4>
+            <button className="profile-quiz-all-btn" onClick={() => navigate('/quiz')}>{t('profile.takeQuiz')}</button>
           </div>
           <div className="profile-quiz-grid">
             {Object.entries(QUIZ_META).map(([id, meta]) => {
@@ -290,7 +264,7 @@ export default function ProfilePage() {
                           <div className="profile-quiz-bar"><div className="profile-quiz-fill" style={{ width: `${pct}%`, background: meta.color }} /></div>
                           <span className="profile-quiz-pct">{pct}%</span>
                         </div>
-                        <span className="profile-quiz-score">{result.score}/{result.total} correct</span>
+                        <span className="profile-quiz-score">{result.score}/{result.total} {t('profile.correct')}</span>
                         {badgeEarned && (
                           <span className="profile-quiz-badge-earned">
                             <span className="material-symbols-outlined" style={{ fontSize: '0.75rem', fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
@@ -299,7 +273,7 @@ export default function ProfilePage() {
                         )}
                       </>
                     ) : (
-                      <span className="profile-quiz-not-done">Not attempted yet</span>
+                      <span className="profile-quiz-not-done">{t('profile.notAttempted')}</span>
                     )}
                   </div>
                   <span className="material-symbols-outlined" style={{ color: 'var(--on-surface-variant)', fontSize: '1.25rem' }}>
@@ -313,7 +287,7 @@ export default function ProfilePage() {
 
         {/* Achievements */}
         <section className="profile-section">
-          <h4 className="profile-section-title">Achievements</h4>
+          <h4 className="profile-section-title">{t('profile.achievements')}</h4>
           <div className="profile-achievements-grid">
             {ACHIEVEMENTS.map(a => (
               <div key={a.title} className={`profile-achievement-card${a.locked ? ' locked' : ''}`}>
@@ -332,7 +306,7 @@ export default function ProfilePage() {
         {/* Settings */}
         <section className="profile-settings-card">
           <div className="profile-settings-header">
-            <h4 className="profile-settings-title">Preferences &amp; Settings</h4>
+            <h4 className="profile-settings-title">{t('profile.prefs')}</h4>
           </div>
           <div className="profile-settings-list">
             {SETTINGS.map(s => (
@@ -347,7 +321,7 @@ export default function ProfilePage() {
             <button className="profile-settings-row danger" onClick={handleLogout}>
               <div className="profile-settings-left">
                 <span className="material-symbols-outlined" style={{ color: 'var(--error)' }}>logout</span>
-                <span className="profile-settings-label danger">Logout</span>
+                <span className="profile-settings-label danger">{t('nav.logout')}</span>
               </div>
             </button>
           </div>
@@ -357,15 +331,15 @@ export default function ProfilePage() {
 
       {/* MODALS */}
       {activeModal && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={activeModal === 'edit' ? 'Edit profile' : 'Notifications'} onClick={() => setActiveModal(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={activeModal === 'edit' ? t('profile.edit') : t('profile.notifs')} onClick={() => setActiveModal(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: '24px', padding: '1.5rem', width: '100%', maxWidth: '400px', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
             
             {activeModal === 'edit' && (
               <>
-                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem' }}>Edit Profile</h3>
+                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem' }}>{t('profile.edit')}</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div className="input-group">
-                    <label style={{ fontSize: '0.875rem', color: 'var(--on-surface-variant)', marginBottom: '0.5rem', display: 'block' }}>Full Name</label>
+                    <label style={{ fontSize: '0.875rem', color: 'var(--on-surface-variant)', marginBottom: '0.5rem', display: 'block' }}>{t('profile.fullName')}</label>
                     <input 
                       type="text" 
                       value={editName} 
@@ -374,12 +348,12 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="input-group">
-                    <label style={{ fontSize: '0.875rem', color: 'var(--on-surface-variant)', marginBottom: '0.5rem', display: 'block' }}>Email (Uneditable)</label>
+                    <label style={{ fontSize: '0.875rem', color: 'var(--on-surface-variant)', marginBottom: '0.5rem', display: 'block' }}>{t('profile.emailLocked')}</label>
                     <input type="text" value={user?.email || ''} disabled style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--outline-variant)', background: 'var(--surface-container-low)', color: 'var(--outline)' }} />
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-                    <button onClick={() => setActiveModal(null)} style={{ flex: 1, padding: '0.75rem', borderRadius: '100px', border: 'none', background: 'var(--surface-container)', color: 'var(--on-surface)', fontWeight: 500 }}>Cancel</button>
-                    <button onClick={handleSaveProfile} disabled={isSaving} style={{ flex: 1, padding: '0.75rem', borderRadius: '100px', border: 'none', background: 'var(--primary)', color: 'var(--on-primary)', fontWeight: 500 }}>{isSaving ? 'Saving...' : 'Save'}</button>
+                    <button onClick={() => setActiveModal(null)} style={{ flex: 1, padding: '0.75rem', borderRadius: '100px', border: 'none', background: 'var(--surface-container)', color: 'var(--on-surface)', fontWeight: 500 }}>{t('common.cancel')}</button>
+                    <button onClick={handleSaveProfile} disabled={isSaving} style={{ flex: 1, padding: '0.75rem', borderRadius: '100px', border: 'none', background: 'var(--primary)', color: 'var(--on-primary)', fontWeight: 500 }}>{isSaving ? t('common.saving') : t('common.save')}</button>
                   </div>
                 </div>
               </>
@@ -388,24 +362,24 @@ export default function ProfilePage() {
             {activeModal === 'privacy' && (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                  <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Privacy Settings</h3>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem' }}>{t('profile.privacyTitle')}</h3>
                   <button onClick={() => setActiveModal(null)} style={{ background: 'transparent', border: 'none', color: 'var(--on-surface-variant)' }}><span className="material-symbols-outlined">close</span></button>
                 </div>
                 <div style={{ padding: '1rem', background: 'var(--surface-container-low)', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>shield</span>
                     <div>
-                      <h5 style={{ margin: '0 0 0.25rem 0' }}>DPDP Act 2023 Compliant</h5>
-                      <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--on-surface-variant)' }}>Your personal data is encrypted and securely stored.</p>
+                      <h5 style={{ margin: '0 0 0.25rem 0' }}>{t('profile.dpdTitle')}</h5>
+                      <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--on-surface-variant)' }}>{t('profile.dpdSub')}</p>
                     </div>
                   </div>
                   <hr style={{ border: 'none', borderTop: '1px solid var(--outline-variant)' }} />
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>Make Profile Public</span>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{t('profile.pubProfile')}</span>
                     <input type="checkbox" defaultChecked={false} style={{ accentColor: 'var(--primary)' }} />
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>Share Analytics Anonymously</span>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{t('profile.shareAnalytics')}</span>
                     <input type="checkbox" defaultChecked={true} style={{ accentColor: 'var(--primary)' }} />
                   </div>
                 </div>

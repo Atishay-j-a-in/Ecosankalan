@@ -34,15 +34,13 @@ const binRoutes = require('./routes/bins');
 const eventRoutes = require('./routes/events');
 const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
-<<<<<<< Updated upstream
-
-=======
 const quizRoutes = require('./routes/quizRoutes'); // <--- ADD THIS
 const challengeRoutes = require('./routes/challenges');
 const voucherRoutes = require('./routes/vouchers');
 const adminRoutes = require('./routes/admin');
 const aiRoutes = require('./routes/ai');
->>>>>>> Stashed changes
+const leaderboardRoutes = require('./routes/leaderboard');
+const markersRoutes = require('./routes/markers');
 // Middleware imports
 const { errorHandler, notFound } = require('./middleware/errorHandler');
 
@@ -134,16 +132,14 @@ app.use('/api/v1/bins', binRoutes);             // Month 4
 app.use('/api/v1/events', eventRoutes);         // Month 4
 app.use('/api/v1/products', productRoutes);     // Month 5
 app.use('/api/v1/orders', orderRoutes);         // Month 5
-<<<<<<< Updated upstream
-
-=======
 app.use('/api/v1/challenges', challengeRoutes); // Month 4
 app.use('/api/v1/vouchers', voucherRoutes);     // Month 5
 app.use('/api/v1/admin', adminRoutes);          // Month 6
 app.use('/api/v1/ai', aiRoutes);                // AI waste scan
 app.use('/api/v1/quiz', quizRoutes); // Versioned route
 app.use('/quiz', quizRoutes);        // Alias for easier testing
->>>>>>> Stashed changes
+app.use('/api/v1/leaderboard', leaderboardRoutes); // Public global board
+app.use('/api/v1/markers', markersRoutes);         // Map markers from DB
 // Root route
 app.get('/', (req, res) => {
   res.json({
