@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Navbar from '../components/common/Navbar';
 import BottomNav from '../components/common/BottomNav';
 import WasteMarkers from '../components/WasteMarkers';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -70,9 +71,9 @@ export default function CommunityPage() {
   const searchWrapRef  = useRef(null);
 
   const filters = [
-    { key: 'all',    icon: 'filter_list',    label: t('map.allBins') },
-    { key: 'events', icon: 'calendar_today', label: t('map.events')   },
-    { key: 'nearby', icon: 'near_me',        label: t('map.myArea')  },
+    { key: 'all',    icon: 'filter_list',    label: t('map.allBins') || 'All Bins' },
+    { key: 'events', icon: 'calendar_today', label: t('map.events') || 'Events'   },
+    { key: 'nearby', icon: 'near_me',        label: t('map.myArea') || 'My Area'  },
   ];
 
   /* ── Search: debounced Nominatim geocoding ─────────────────────── */
@@ -209,7 +210,7 @@ export default function CommunityPage() {
         marker.bindPopup(`
           <div class="map-popup">
             <strong>${name}</strong>
-            <span class="map-popup-type">${t('map.legendEvent')}</span>
+            <span class="map-popup-type">${t('map.legendEvent') || 'Event'}</span>
             <p>${addr}</p>
           </div>
         `);
@@ -232,7 +233,7 @@ export default function CommunityPage() {
         marker.bindPopup(`
           <div class="map-popup">
             <strong>${name}</strong>
-            <span class="map-popup-type">${t('map.legendBin')}</span>
+            <span class="map-popup-type">${t('map.legendBin') || 'Bin'}</span>
             <p>${addr}</p>
           </div>
         `);
@@ -260,8 +261,13 @@ export default function CommunityPage() {
 
   /* ── Locate user & fetch nearby bins ───────────────────────────── */
   const handleLocate = useCallback(() => {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      setLocError(t('map.geoNotSupported') || 'Geolocation not supported');
+      setTimeout(() => setLocError(''), 3000);
+      return;
+    }
     setLocating(true);
+    setLocError('');
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
         const L   = window.L;
@@ -280,15 +286,21 @@ export default function CommunityPage() {
           setBinsError('');
           setActiveFilter('nearby');
         } catch (err) {
-          setBinsError(err.message || 'Could not load nearby bins.');
+          setBinsError(err.message || t('map.errNearby') || 'Could not load nearby bins.');
         } finally {
           setLocating(false);
         }
       },
-      () => setLocating(false),
+      (err) => {
+        setLocating(false);
+        if (err.code === 1) setLocError(t('map.errPerm') || 'Location access denied. Enable it in browser settings.');
+        else if (err.code === 2) setLocError(t('map.errUnavail') || 'Location unavailable. Try again.');
+        else setLocError(t('map.errTimeout') || 'Location request timed out. Try again.');
+        setTimeout(() => setLocError(''), 4000);
+      },
       { enableHighAccuracy: true, timeout: 8000 }
     );
-  }, []);
+  }, [t]);
 
   const handleFilterClick = useCallback((filterKey) => {
     setActiveFilter(filterKey);
@@ -317,19 +329,23 @@ export default function CommunityPage() {
   /* ── Bottom-sheet item ──────────────────────────────────────────── */
   const sheetItem = selected || null;
 
+  /* ── Directions handler ─────────────────────────────────────────── */
+  const handleDirections = useCallback(() => {
+    if (!sheetItem) return;
+    const lat = sheetItem.type === 'event'
+      ? sheetItem.data.location?.coordinates?.[1] || sheetItem.data.lat || sheetItem.data._lat
+      : sheetItem.data.lat || sheetItem.data._lat || sheetItem.data.location?.coordinates?.[1];
+    const lng = sheetItem.type === 'event'
+      ? sheetItem.data.location?.coordinates?.[0] || sheetItem.data.lng || sheetItem.data._lng
+      : sheetItem.data.lng || sheetItem.data._lng || sheetItem.data.location?.coordinates?.[0];
+    if (lat && lng) {
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank', 'noopener,noreferrer');
+    }
+  }, [sheetItem]);
+
   return (
     <div className="community-map-root">
-      <header className="community-glass-header">
-        <div className="community-header-left">
-          <div className="community-avatar">
-            <img src="/logo.png" alt="EcoSankalan Logo" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
-          </div>
-          <h1 className="community-brand">EcoSankalan</h1>
-        </div>
-        <button className="community-notif-btn">
-          <span className="material-symbols-outlined">notifications</span>
-        </button>
-      </header>
+      <Navbar />
 
       <main className="community-map-canvas">
         <div ref={mapRef} className="community-leaflet-map" />
@@ -344,14 +360,14 @@ export default function CommunityPage() {
               </span>
               <input
                 className="community-search-input"
-                placeholder={t('map.searchPh')}
+                placeholder={t('map.searchPh') || 'Search places in India...'}
                 type="text"
                 value={searchQuery}
                 onChange={handleSearchInput}
                 onFocus={() => searchResults.length > 0 && setShowResults(true)}
               />
               {searchQuery && (
-                <button type="button" className="community-search-clear" aria-label={t('map.clearSearch')} onClick={() => {
+                <button type="button" className="community-search-clear" aria-label={t('map.clearSearch') || 'Clear search'} onClick={() => {
                   setSearchQuery('');
                   setSearchResults([]);
                   setShowResults(false);
@@ -360,7 +376,7 @@ export default function CommunityPage() {
                 </button>
               )}
               <div className="community-search-divider" />
-              <button type="submit" className="community-list-btn" aria-label={t('map.searchPlaces')}>
+              <button type="submit" className="community-list-btn" aria-label={t('map.searchPlaces') || 'Search places'}>
                 <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>arrow_forward</span>
               </button>
             </form>
@@ -390,7 +406,7 @@ export default function CommunityPage() {
           </div>
         </div>
 
-        <div className="community-fabs" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+        <div className="community-fabs">
           {locError && (
             <div className="waste-loading-badge" role="alert" style={{ background: '#ffebee', color: '#B71C1C', whiteSpace: 'nowrap', padding: '0.5rem 1rem', borderRadius: '1rem', display: 'flex', alignItems: 'center', gap: '0.25rem', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
               <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>error</span>
@@ -401,7 +417,7 @@ export default function CommunityPage() {
             <div className="waste-loading-badge" role="alert" style={{ background: '#fff8e1', color: '#5d4037', whiteSpace: 'nowrap', padding: '0.5rem 1rem', borderRadius: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
               <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>warning</span>
               <span>{binsError}</span>
-              <button type="button" onClick={handleLocate} className="waste-retry-btn" aria-label="Retry loading nearby bins">{t('common.retry')}</button>
+              <button type="button" onClick={handleLocate} className="waste-retry-btn" aria-label="Retry loading nearby bins">{t('common.retry') || 'Retry'}</button>
             </div>
           )}
           <button className="community-fab-sm" onClick={handleLocate} disabled={locating} style={{ alignSelf: 'flex-end' }} aria-label="Find bins near my location">
@@ -409,20 +425,21 @@ export default function CommunityPage() {
               {locating ? 'progress_activity' : 'my_location'}
             </span>
           </button>
-          {/* Report a missing bin — photo + live location, admin reviews */}
           <button
-            className="community-fab-lg"
+            className="community-fab-addbin"
             onClick={() => navigate('/report-bin')}
-            aria-label={t('map.reportBin')}
-            title={t('map.reportBin')}
+            style={{ alignSelf: 'flex-end' }}
+            aria-label={t('map.reportBin') || 'Report a new bin'}
+            title={t('map.reportBin') || 'Report a new bin'}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '1.75rem' }}>add_location</span>
+            <span className="material-symbols-outlined">add_location</span>
+            <span>{t('addbin') || 'addbin'}</span>
           </button>
           {/* Marker legend */}
-          <div className="waste-loading-badge" aria-label={t('map.legend')} style={{ background: 'rgba(255,255,255,0.95)', color: '#37474f', padding: '0.5rem 0.75rem', borderRadius: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '0.75rem' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ width: '0.6rem', height: '0.6rem', borderRadius: '50%', background: '#2e7d32', display: 'inline-block' }} /> {t('map.legendBin')}</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ width: '0.6rem', height: '0.6rem', borderRadius: '50%', background: '#7b1fa2', display: 'inline-block' }} /> {t('map.legendEvent')}</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ width: '0.6rem', height: '0.6rem', borderRadius: '50%', background: '#1565c0', display: 'inline-block' }} /> {t('map.legendYou')}</span>
+          <div className="waste-loading-badge" aria-label={t('map.legend') || 'Map legend'} style={{ background: 'rgba(255,255,255,0.95)', color: '#37474f', padding: '0.5rem 0.75rem', borderRadius: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '0.75rem' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ width: '0.6rem', height: '0.6rem', borderRadius: '50%', background: '#2e7d32', display: 'inline-block' }} /> {t('map.legendBin') || 'Bin'}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ width: '0.6rem', height: '0.6rem', borderRadius: '50%', background: '#7b1fa2', display: 'inline-block' }} /> {t('map.legendEvent') || 'Event'}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><span style={{ width: '0.6rem', height: '0.6rem', borderRadius: '50%', background: '#1565c0', display: 'inline-block' }} /> {t('map.legendYou') || 'You'}</span>
           </div>
         </div>
 
@@ -440,7 +457,7 @@ export default function CommunityPage() {
               <div className="community-sheet-info">
                 <div className="community-sheet-toprow">
                   <span className="community-sheet-tag">
-                    {sheetItem.type === 'event' ? t('map.eventTag') : t('map.binTag')}
+                    {sheetItem.type === 'event' ? (t('map.eventTag') || 'Community Event') : (t('map.binTag') || 'Waste Bin')}
                   </span>
                   <div className="community-sheet-rating">
                     <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1", fontSize: '1rem' }}>star</span>
@@ -472,23 +489,23 @@ export default function CommunityPage() {
                     <span>{fmtDate(sheetItem.data.eventDate, lang === 'hi' ? 'hi-IN' : 'en-IN')}</span>
                     <span className="community-sheet-meta-sep">|</span>
                     <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>emoji_events</span>
-                    <span>{`${sheetItem.data.bonusPoints || 0} ${t('map.pts')}`}</span>
+                    <span>{`${sheetItem.data.bonusPoints || 0} ${t('map.pts') || 'pts'}`}</span>
                   </div>
                 )}
                 <div className="community-sheet-actions">
-                  <button className="community-sheet-btn-sec">
+                  <button className="community-sheet-btn-sec" onClick={handleDirections}>
                     <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>directions</span>
-                    {t('map.directions')}
+                    {t('map.directions') || 'Directions'}
                   </button>
                   {sheetItem.type === 'event' ? (
                     <button className="community-sheet-btn-pri" onClick={() => handleEventClick(sheetItem.data)}>
                       <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>check_circle</span>
-                      {t('map.rsvp')}
+                      {t('map.rsvp') || 'RSVP'}
                     </button>
                   ) : (
                     <button className="community-sheet-btn-pri" onClick={() => navigate('/waste')}>
                       <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>delete</span>
-                      {t('map.logWaste')}
+                      {t('map.logWaste') || 'Log Waste'}
                     </button>
                   )}
                 </div>
