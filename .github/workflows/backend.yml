@@ -11,6 +11,7 @@ on:
       - "src/**"
       - "__mocks__/**"
       - ".github/workflows/backend.yml"
+
   workflow_dispatch:
 
 permissions:
@@ -28,37 +29,56 @@ jobs:
     steps:
       - name: Deploy backend
         uses: appleboy/ssh-action@v1.2.2
+
         env:
           APP_PATH: ${{ secrets.EC2_APP_PATH }}
+
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
           envs: APP_PATH
+
           script: |
             set -eu
 
+            # Load NVM
+            export NVM_DIR="/home/ubuntu/.nvm"
+            . "$NVM_DIR/nvm.sh"
+
+            echo "Node version: $(node -v)"
+            echo "NPM version: $(npm -v)"
+
+            # Go to the backend repository
             cd "$APP_PATH"
 
             echo "Pulling latest code..."
             git fetch origin main
             git reset --hard origin/main
 
-            echo "Installing production dependencies..."
+            # Install production dependencies
+            echo "Installing dependencies..."
             npm ci --omit=dev
 
+            # Ensure PM2 is available
             if ! command -v pm2 >/dev/null 2>&1; then
               npm install --global pm2
             fi
 
+            # Start or reload the backend
             if pm2 describe ecosankalan-backend >/dev/null 2>&1; then
+              echo "Reloading backend..."
               pm2 reload ecosankalan-backend --update-env
             else
+              echo "Starting backend..."
               pm2 start src/server.js \
                 --name ecosankalan-backend \
                 --update-env
             fi
 
+            # Save PM2 process list
             pm2 save
+
+            echo "Deployment finished."
             pm2 status
-            echo "Deployment completed."
