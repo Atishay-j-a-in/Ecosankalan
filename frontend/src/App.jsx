@@ -7,6 +7,7 @@ import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 import ErrorBoundary from './components/common/ErrorBoundary';
 
 // ── Pages (only ones that exist in the repo) ──────────────────────
+import LandingPage         from './pages/LandingPage';
 import LoginPage           from './pages/LoginPage';
 import RegisterPage        from './pages/RegisterPage';
 import OAuthPage           from './pages/OAuthPage';
@@ -55,14 +56,30 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+// ── Root: landing page for visitors, dashboard for signed-in users ────
+// Waits for auth to settle first — otherwise a valid session flashes
+// the landing page (or bounced to /leaderboard) before sync finishes.
+const RootRoute = () => {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return null;
+  return user ? <Navigate to="/dashboard" replace /> : <LandingPage />;
+};
+
 function AppRoutes() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const { t } = useLanguage();
+  const authGate = (page) => {
+    if (isLoading) return null;
+    return user ? <Navigate to="/dashboard" replace /> : page;
+  };
   return (
     <Routes>
+      {/* Landing — session-aware root */}
+      <Route path="/" element={<RootRoute />} />
+
       {/* Public / Auth routes */}
-      <Route path="/login"    element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
-      <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <RegisterPage />} />
+      <Route path="/login"    element={authGate(<LoginPage />)} />
+      <Route path="/register" element={authGate(<RegisterPage />)} />
       <Route path="/auth"         element={<OAuthPage />} />
       <Route path="/auth/success" element={<OAuthSuccessPage />} />
       <Route path="/auth/failure" element={<OAuthFailurePage />} />
@@ -100,9 +117,8 @@ function AppRoutes() {
       <Route path="/verify-phone" element={<Navigate to="/login" replace />} />
       <Route path="/reset-password" element={<Navigate to="/login" replace />} />
 
-      {/* Fallback */}
-      <Route path="/"  element={<Navigate to="/leaderboard" replace />} />
-      <Route path="*"  element={<Navigate to="/leaderboard" replace />} />
+      {/* Fallback — unknown URLs follow the same session-aware root */}
+      <Route path="*"  element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
