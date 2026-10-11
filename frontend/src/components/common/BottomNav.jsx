@@ -24,6 +24,19 @@ export default function BottomNav() {
       : { label: t('nav.profile'), icon: 'person',               route: '/profile' },
   ];
 
+  // Dock magnification state — cursor position tracked on the inner bar.
+  const innerRef = useRef(null);
+  const [focus, setFocus] = useState(null);
+
+  const onMove = useCallback((e) => {
+    const el = innerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setFocus({ x: e.clientX - rect.left, width: rect.width });
+  }, []);
+
+  const onLeave = useCallback(() => setFocus(null), []);
+
   const scaleFor = (index) => {
     if (!focus) return 1;
     const center = ((index + 0.5) / NAV_ITEMS.length) * focus.width;
