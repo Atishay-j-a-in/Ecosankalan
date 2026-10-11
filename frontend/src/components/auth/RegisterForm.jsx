@@ -17,12 +17,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { OAuthProvider, Account, ID } from 'appwrite';
 import appwriteClient from '../../lib/appwrite';
+import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import OAuthReturnHint, { markOAuthPending } from './OAuthReturnHint';
 
 export default function RegisterForm() {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { refreshAuth } = useAuth();
 
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', password: '', confirmPassword: '',
@@ -47,6 +49,32 @@ export default function RegisterForm() {
       });
     } catch (err) {
       setError(err.message || t('auth.errGoogle'));
+      setLoading(false);
+    }
+  };
+
+  // One-tap demo access for judges — same shared guest account as login.
+  const handleGuestLogin = async () => {
+    const email = import.meta.env.VITE_GUEST_EMAIL;
+    const password = import.meta.env.VITE_GUEST_PASSWORD;
+    if (!email || !password) {
+      setError(t('auth.errGuestSetup'));
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const account = new Account(appwriteClient);
+      try {
+        await account.deleteSession('current');
+      } catch {
+        // No existing session — expected on first login
+      }
+      await account.createEmailPasswordSession({ email, password });
+      await refreshAuth();
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err?.message || t('auth.errLogin'));
       setLoading(false);
     }
   };
@@ -151,6 +179,23 @@ export default function RegisterForm() {
 
   return (
     <div className="auth-form-wrapper">
+      <button
+        type="button"
+        className="submit-btn guest-btn"
+        onClick={handleGuestLogin}
+        disabled={loading}
+        style={{ background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)', marginBottom: '1.25rem' }}
+      >
+        <span className="material-symbols-outlined">visibility</span>
+        {t('auth.guestBtn')}
+      </button>
+
+      <div className="divider" style={{ marginBottom: '1.5rem' }}>
+        <div className="divider-line" />
+        <span className="divider-text">{t('auth.orGuest')}</span>
+        <div className="divider-line" />
+      </div>
+
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
         <button
           type="button"
