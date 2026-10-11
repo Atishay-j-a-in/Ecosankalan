@@ -22,14 +22,15 @@ The repository also contains administration routes for bins, events, vouchers, a
 
 ### User-facing features
 
-- Email/password registration and login.
-- Google sign-in through Google ID-token verification.
-- JWT-based protected API access.
+- Email/password and OTP authentication through Appwrite.
+- Google sign-in through Appwrite OAuth.
+- Appwrite JWT-based protected API access.
 - Waste logging by category, quantity, unit, description, and logging method.
 - Waste history with pagination and category filtering.
 - Waste statistics for week, month, or all-time ranges.
 - AI waste-image analysis using OpenAI vision models.
 - Nearby recycling-bin discovery using geospatial MongoDB queries.
+- Map-marker browsing with viewport and category filters.
 - Community event listing, upcoming-event discovery, and RSVP.
 - Weekly challenges with per-task progress and reward issuance.
 - Eco-points and CO₂-saved tracking.
@@ -37,6 +38,7 @@ The repository also contains administration routes for bins, events, vouchers, a
 - Voucher inventory, user voucher history, and point-based voucher unlocking.
 - Profile retrieval, profile updates, points, badges, and avatar upload endpoints.
 - Admin statistics and management endpoints for vouchers, bins, and events.
+- Guest judge access with a controlled demo admin account.
 
 ### Frontend surfaces
 
@@ -65,7 +67,7 @@ The React application includes route-level screens for authentication, dashboard
 └───────────────┬───────────────────────┬──────────────────────┘
                 │                       │
                 ▼                       ▼
-       JWT/RBAC middleware       Controllers/services
+       Appwrite JWT/RBAC middleware  Controllers/services
                 │                       │
                 └───────────────┬───────┘
                                 ▼
@@ -76,7 +78,7 @@ The React application includes route-level screens for authentication, dashboard
 └──────────────────────────────────────────────────────────────┘
 
 External integrations:
-  OpenAI vision · Google OAuth · Cloudinary · OpenStreetMap/Overpass
+  Appwrite Auth · OpenAI vision · Cloudinary · OpenStreetMap/Overpass
 ```
 
 ### Request flow
@@ -174,13 +176,13 @@ ecosankalan-codebase/
 | Styling | CSS files under `frontend/src/styles` |
 | Backend | Node.js 18+, Express 4 |
 | Database | MongoDB with Mongoose 8 |
-| Authentication | JWT, bcryptjs, Google OAuth token verification |
+| Authentication | Appwrite Auth, Appwrite JWT verification, legacy bcryptjs compatibility |
 | AI | OpenAI vision API with structured JSON output |
 | Maps | Leaflet, OpenStreetMap/Overpass helpers |
 | Media | Multer uploads and optional Cloudinary storage |
 | API hardening | Helmet, CORS, compression, Morgan, express-rate-limit |
 | Testing | Jest and Supertest |
-| Hosting target | MongoDB Atlas and Vercel-compatible deployment |
+| Deployment | GitHub Actions → EC2 over SSH → PM2 |
 
 ## API surface
 
@@ -292,6 +294,42 @@ ALLOWED_REDIRECT_DOMAINS=
 ```
 
 Never commit `.env`, API keys, database credentials, or provider secrets.
+
+## Production deployment
+
+The backend is deployed to an EC2 instance through
+[`.github/workflows/backend.yml`](.github/workflows/backend.yml). A push to
+`main` that changes the backend triggers the workflow, which:
+
+1. Connects to EC2 over SSH.
+2. Fetches and checks out the latest `origin/main`.
+3. Installs production dependencies with `npm ci --omit=dev`.
+4. Starts or reloads the `ecosankalan-backend` PM2 process.
+5. Saves the PM2 process list.
+
+Configure these GitHub Actions repository secrets:
+
+| Secret | Description |
+|---|---|
+| `EC2_HOST` | EC2 public IP address or DNS name |
+| `EC2_USERNAME` | SSH user, such as `ubuntu` |
+| `EC2_SSH_KEY` | Private SSH key used to access the instance |
+| `EC2_APP_PATH` | Absolute path to the cloned repository on EC2, such as `/home/ubuntu/Ecosankalan` |
+
+Before the first deployment, clone the repository into `EC2_APP_PATH`, install
+Node.js and npm, and create the production `.env` file on EC2. The `.env` file
+is intentionally not stored in Git and is preserved by the deployment reset.
+PM2 keeps the backend running after an SSH session closes and restarts it when
+the process crashes. The EC2 instance itself must remain running; stopping the
+instance stops the application.
+
+To restore PM2 processes automatically after an EC2 reboot, run once on the
+instance as the deployment user:
+
+```bash
+pm2 startup
+pm2 save
+```
 
 ## Testing and verification
 

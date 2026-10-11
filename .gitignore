@@ -5,10 +5,8 @@
 # ── Environment & Secrets ──────────────────
 # NEVER commit .env — it contains API keys, DB passwords, JWT secrets
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 
 # ── Node.js ───────────────────────────────
 node_modules/
@@ -17,12 +15,15 @@ yarn-debug.log*
 yarn-error.log*
 .npm
 .yarn-integrity
+pnpm-debug.log*
 
 # ── Build outputs ─────────────────────────
 dist/
 build/
 .next/
 out/
+.vite/
+.cache/
 
 # ── Testing ───────────────────────────────
 coverage/
@@ -31,6 +32,8 @@ coverage/
 # ── Logs ──────────────────────────────────
 logs/
 *.log
+*.pid
+*.pid.lock
 
 # ── OS files ──────────────────────────────
 .DS_Store
@@ -48,6 +51,7 @@ desktop.ini
 *.swp
 *.swo
 *~
+.history/
 
 # ── Vercel ────────────────────────────────
 .vercel
@@ -55,7 +59,13 @@ desktop.ini
 # ── Uploads (local dev only) ──────────────
 uploads/
 temp/
+tmp/
 
 # ── MongoDB dump (never commit raw DB data) ──
 *.dump
 dump/
+
+# ── Local credentials & certificates ──────
+*.pem
+*.key
+*.crt
